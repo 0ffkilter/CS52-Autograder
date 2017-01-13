@@ -46,8 +46,6 @@ def check_files(files, file_dir, student_list=student_list.STUDENT_LIST):
     """
     file_list = []
     for (directory, sub_dirs, sub_files) in os.walk(file_dir):
-        print(directory)
-        print(os.path.basename(directory))
         if any([os.path.basename(directory) == a for (a,b,c) in student_list]):
             print("foo")
             files_present = []
@@ -105,7 +103,7 @@ def anyCase(st) :
     return "".join(["[%s%s]" %(c.lower(), c.upper()) if c.isalpha() else c for c in st])
 
 
-def refresh_file(assign_number, student_name, student_list=student_list.STUDENT_LIST):
+def refresh_file(assign_num, student_name, student_list=student_list.STUDENT_LIST):
     """ Updates the files for a particular student
 
     assign_number:  which assignment
@@ -116,10 +114,10 @@ def refresh_file(assign_number, student_name, student_list=student_list.STUDENT_
             if name == student_name:
                 student_name = (name, email, section)
                 break
-    files = get_files(assign_number)
-    src_dir = "asgt0%i-submissions" %(assign_number)
-    tgt_dir = "asgt0%i-ready" %(assign_number)
-    move_files(files, src_dir, tgt_dir, [student_name])
+    files = get_files(assign_num)
+    src_dir = "asgt0%i-submissions" %(assign_num)
+    tgt_dir = "asgt0%i-ready" %(assign_num)
+    return move_files(files, src_dir, tgt_dir, [student_name])
     
 
 def move_files(files, source_dir, target_dir, stdt_list=student_list.STUDENT_LIST):
@@ -212,5 +210,3 @@ def move_files(files, source_dir, target_dir, stdt_list=student_list.STUDENT_LIS
     return return_list
 
   
-gather_assignment(4)
-print(get_files_missing(check_assignment(4)))
