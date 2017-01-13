@@ -83,7 +83,7 @@ def get_files_present(file_list):
     return return_list
 
 
-def gather_assignment(assign_number, student_list=student_list.STUDENT_LIST):
+def gather_assignment(assign_number, overwrite=False, student_list=student_list.STUDENT_LIST):
     """ Gathers the assignment files into asgt0N-ready
 
     assign_number:  which assignment
@@ -92,7 +92,7 @@ def gather_assignment(assign_number, student_list=student_list.STUDENT_LIST):
     files = get_files(assign_number)
     src_dir = "asgt0%i-submissions" %(assign_number)
     tgt_dir = "asgt0%i-ready" %(assign_number)
-    move_files(files, src_dir, tgt_dir, student_list)
+    return move_files(files, src_dir, tgt_dir, overwrite, student_list)
 
 
 def anyCase(st) :
@@ -120,7 +120,7 @@ def refresh_file(assign_num, student_name, student_list=student_list.STUDENT_LIS
     return move_files(files, src_dir, tgt_dir, [student_name])
     
 
-def move_files(files, source_dir, target_dir, stdt_list=student_list.STUDENT_LIST):
+def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student_list.STUDENT_LIST):
     """ Moves students' files from source to target dir 
 
     files:          which files to move
@@ -195,7 +195,11 @@ def move_files(files, source_dir, target_dir, stdt_list=student_list.STUDENT_LIS
             file_src_name = os.path.join(d,n)
             file_tgt_name = os.path.join(file_tgt_dir, "%s-%s" %(student, n))
             present_list.append(n)
-            if not os.path.exists(os.path.join(file_tgt_name)):
+            if not overwrite:
+                if not os.path.exists(os.path.join(file_tgt_name)):
+                    shutil.copy(file_src_name, file_tgt_name)
+            else:
+                os.remove(file_tgt_name)
                 shutil.copy(file_src_name, file_tgt_name)
 
 
