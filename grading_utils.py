@@ -15,20 +15,14 @@ def get_requirements(requirements, assign_num):
     return_list = []
     for req in req_list:
         cur_path = None
-        if "$ASSIGN$" in req:
+        if "$FILE$" in req:
             cur_req = req.split("/")[-1]
             cur_path = os.path.join("CS52-GradingScripts",
                                     "asgt0%i" % (assign_num), cur_req + ".sml")
-            if os.path.exists(cur_path):
-                return_list.append(cur_path)
-        elif "$PROBLEM$" in req:
-            cur_req = req.split("/")[-1]
-            cur_path = "-%s-" % (cur_req)
-            return_list.append(cur_path)
         else:
             cur_path = os.path.join("pregrade_files", req + ".sml")
-            if os.path.exists(cur_path):
-                return_list.append(cur_path)
+        if os.path.exists(cur_path):
+            return_list.append(cur_path)
     return return_list
 
 
@@ -44,7 +38,7 @@ def split_string(string, flag):
     # \w is an abbreviation for A-Za-z0-9_
     regex = re.compile('[$][+-][\w.\-\*]*')
 
-    selectedFlags = set(flag)
+    selectedFlags = set([flag])
     selectedFlags.add('')
 
     currentFlags = set()
@@ -52,7 +46,7 @@ def split_string(string, flag):
     echo = False
 
     result = ""
-    for line in string:
+    for line in string.split("\n"):
         newFlags = regex.findall(line)
         if 0 < len(newFlags):
             for flag in newFlags:
@@ -73,8 +67,10 @@ def split_string(string, flag):
 def split_file(read_file, flag):
     with open(read_file, 'r') as f:
         contents = f.read()
+
         return split_string(contents, flag)
 
+#print(split_file(os.path.join("asgt01-ready", "Abele", "Abele-asgt01.sml"), "01_01"))
 
 def format_check(f_name):
     """

@@ -24,7 +24,7 @@ def gather_files(assign_num, overwrite=False):
     return (result, file_string)
 
 
-def gather_files(assign_num, student_name):
+def gather_files_student(assign_num, student_name):
     result = file_utils.refresh_file(assign_num, student_name)
 
 
@@ -51,25 +51,27 @@ def check_files(assign_num, student_name):
 def grade_assignment(assign_num, students=STUDENT_LIST):
 
     # First we gather the files, but don't overwrite them:
-    file_list, missing_string = gather_files(assign_num)
+    
 
     # Load the config file
     config = configparser.ConfigParser()
 
-    config.read("CS52-GradingScripts/asgt0%i/config.ini")
-
+    config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
     num_points = config["Assignment"]["TotalPoints"]
     style_points = config["Assignment"]["StylePoints"]
     num_problems = int(config["Assignment"]["NumProblems"])
-    submit_file = config["Assignment"]["File"]
+    submit_files = config["Assignment"]["File"].split(",")
+
+   
+    file_list = file_utils.move_files(submit_files, "asgt0%i-submissions" %(assign_num), "asgt0%i-ready" %(assign_num))
 
     problem_config = []
     for i in range(num_problems):
-        cur_num = str(i + 1)
-        problem_config.append((config[cur_num]["Requirements"],
-                               config[cur_num]["Points"],
-                               config[cur_num]["Tests"],
-                               config[cur_num]["Script"]))
+        cur_num = i + 1
+        problem_config.append((str(cur_num), config[str(cur_num)]))
+        if "Subproblems" in config[str(cur_num)]:
+            for sub_problem in config[str(cur_num)]["Subproblems"].split(","):
+                problem_config.append(("%i%s" %(cur_num, sub_problem), config["%i%s" %(cur_num, sub_problem)]))
 
     # Generate sml subfiles
 
@@ -77,55 +79,69 @@ def grade_assignment(assign_num, students=STUDENT_LIST):
 
     problem_strings = []
     #[(pre_string, post_string)]
-    for i in range(problem_config):
-        (reqs, points, tests, file_name) = problem_config[i]
-
-        # Get the requirements list for the scripts
-        req_list = grading_utils.get_requirements(reqs, assign_num)
+    for name, problem in problem_config:
+        req_list = grading_utils.get_requirements(problem["requirements"], assign_num)
 
         # Fancy formatting
-        pre_string = "=====================Grader Code====================="
+        pre_string = "\n\n(*=====================Grader Code=====================*)\n\n"
 
         # Read from each of the req files
-        for r in reqs:
+     
+        for r in req_list:
             with open(r, "r") as f:
                 pre_string = pre_string + f.read() + "\n"
 
         # Read from the script file
         post_string = ""
+
+        file_name = ""
+        if "Script" in problem:
+            file_name = problem["Script"]
+        else:
+            file_name = "asgt0%i_%s.sml" %(assign_num, name)
+
         with open(os.path.join("CS52-GradingScripts", "asgt0%i" % (assign_num), file_name), "r") as f_grade:
             post_string = f_grade.read()
 
         # Put into a list
-        problem_strings.append((pre_string, post_string))
+        problem_strings.append((name, pre_string, post_string))
 
     # now for each student
+
     for (student, email, section) in students:
-        directory = os.path.join("asgt0%i" % (assign_num), student, "grading")
-        if not os.path.exists(directory):
-            os.makedirs(directory)
 
         # problems are 1 indexed
-        p = 1
+        
         # For each of the problem strings
-        for (pre_string, post_string) in problem_strings:
+        for (name, pre_string, post_string) in problem_strings:
             # Generate a flag to partition the file
             flag = ""
-            if p < 10:
-                flag = flag = "0%i_0%i" % (assign_num, p)
+            if len(name) > 1:
+                if name[-1].isalpha():
+                    if int(name[:-1]) < 10:    
+                        flag = flag + "0%i_0%s" % (assign_num, name)
+                    else:
+                        flag = flag + "0%i_%s" % (assign_num, name)
+                else:
+                    flag = flag + "0%i_%s" % (assign_num, name)
             else:
-                flag = flag = "0%i_%i" % (assign_num, p)
+                if int(name) < 10:
+                    flag = flag + "0%i_0%s" % (assign_num, name)
+                else:
+                    flag = flag + "0%i_%s" % (assign_num, name)
 
             # Partition the student's file
-            content_string = grader_utils.split_file(os.path.join(
-                "asgt0%i-ready" % (assign_num), student, submit_file), flag)
+            content_string = grading_utils.split_file(os.path.join(
+                "asgt0%i-ready" % (assign_num), student, "%s-%s" %(student, submit_files[0])), flag)
 
             # Write to a grading file
-            with open(os.path.join("asgt0%i-ready" % (assign_num), student, "grading", "asgt0%i_%i" % (assign_num, p)), "w+") as g_file:
-                g_file.write(content_string)
-                g_file.write(pre_string)
-                g_file.write(post_string)
-            p = p + 1
+            if not os.path.exists(os.path.join("asgt0%i-ready" % (assign_num), student, "grading")):
+                os.makedirs(os.path.join("asgt0%i-ready" % (assign_num), student, "grading"))
+            with open(os.path.join("asgt0%i-ready" % (assign_num), student, "grading", "asgt0%i_%s.sml" % (assign_num, name)), "w+") as g_file:
+
+                g_file.write(content_string + pre_string + post_string)
+            
+        
 
 
 def grade_student(assign_num, student_name):
@@ -162,3 +178,7 @@ def main():
 
     res = parser.parse_args()
     print(res)
+
+    grade_assignment(1)
+
+main()

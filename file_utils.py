@@ -8,7 +8,6 @@ January, 2017
 import os
 import shutil
 import glob
-from config import ASSIGNMENT_FILES
 import time
 import datetime
 from grading_scripts import student_list
@@ -82,17 +81,18 @@ def get_files_present(file_list):
             return_list.append(os.path.join(directory, f))
     return return_list
 
-
+"""
 def gather_assignment(assign_number, overwrite=False, student_list=student_list.STUDENT_LIST):
-    """ Gathers the assignment files into asgt0N-ready
+    Gathers the assignment files into asgt0N-ready
 
     assign_number:  which assignment
     student_list:   list of kiddos
-    """
+    
     files = get_files(assign_number)
     src_dir = "asgt0%i-submissions" %(assign_number)
     tgt_dir = "asgt0%i-ready" %(assign_number)
     return move_files(files, src_dir, tgt_dir, overwrite, student_list)
+"""
 
 
 def anyCase(st) :
@@ -128,6 +128,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
     target_dir:     where to move
     stdt_list:      list of students
     """
+    print("foo")
     if not os.path.exists(source_dir):
         if re.match("(asgt0)([1-9]{1})(-submissions)", source_dir) is None:
             raise FileNotFoundError("Source Destination doesn't exist")
@@ -140,6 +141,8 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
         created = False
 
     return_list = []
+
+
     for (student, email, section) in stdt_list:
         print("%s : %s" %(student, email))
         possibleFiles = glob.glob(os.path.join(source_dir, "*" + anyCase(email) + "*"))
@@ -151,7 +154,8 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
 
         #possible matches
         for result in possibleFiles:
-            if "2016" in result:
+
+            if "2016" in result or "2017" in result:
                 #strip the time
                 time = datetime.datetime.strptime(result, os.path.join(source_dir, "%Y-%m-%dT%H+%M+%S+%f" + result[result.find("Z"):]))
 
@@ -160,6 +164,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
                     for f in filenames:
                         #if it's one of the files we're looking for
                         if f in files:
+
                             #get the student id
                             student_id = dirpath.split("-")[-1]
                             new_file_list = []
@@ -179,9 +184,10 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
                                 else:
                                     new_file_list.append((cur_path, file_name, timestamp))
                             if not found:
-                                 new_file_list.append((dirpath, f, time))
+                                new_file_list.append((dirpath, f, time))
                                 
                             file_list = new_file_list 
+                            
 
         #okay, so now file_list contains triples of (directory, name, time) - time to record the missing ones
 
@@ -189,6 +195,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
         missing_list = []
         file_tgt_dir = os.path.join(target_dir, student)
 
+        
         if not os.path.exists(file_tgt_dir):
             os.makedirs(file_tgt_dir)
         for (d, n, t) in file_list:
@@ -196,8 +203,11 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
             file_tgt_name = os.path.join(file_tgt_dir, "%s-%s" %(student, n))
             present_list.append(n)
             if not overwrite:
-                if not os.path.exists(os.path.join(file_tgt_name)):
+        
+                if not os.path.exists(file_tgt_name):
+
                     shutil.copy(file_src_name, file_tgt_name)
+                
             else:
                 os.remove(file_tgt_name)
                 shutil.copy(file_src_name, file_tgt_name)
