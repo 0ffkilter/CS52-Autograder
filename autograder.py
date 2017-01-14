@@ -157,15 +157,18 @@ def gather_files_student(assign_num, overwrite, student_name):
             to_grade.append((name, email, section))
     return gather_files(assign_num, overwrite, to_grade)
 
-def grade_student(assign_num, student, student_file, config, problems, grading_file_list):
+def grade_student(assign_num, student, student_file, config, problems, grading_file_list, cur_progress, total_points):
 
     (name, email, section) = student
-    print("Grading %s" %(name))
+   
 
     output_string = ""
     summary_list = []
     num_not_compiled = 0
+
     for p, f in zip(problems, grading_file_list):
+        cur_progress = cur_progress + 1
+        cmd_utils.progress(cur_progress, total_points, "%s : %s" %(name, p))
         cur_path = os.path.join("asgt0%i-ready" %(assign_num), name, "grading", f)
         output = cmd_utils.run_file(cur_path)
         
@@ -197,6 +200,7 @@ def grade_student(assign_num, student, student_file, config, problems, grading_f
 
         summary_list.append((p, deduction))
         output_string = output_string + problem_string
+ 
 
     output_string = output_string + "\n\n=====Summary:=====\n\n"
 
@@ -240,9 +244,7 @@ def grade_student(assign_num, student, student_file, config, problems, grading_f
     with open(grade_path, "w+") as f:
         f.write(output_string)
 
-
-    print("Done with %s" %(name))
-
+    return cur_progress
 
 
 def grade_assignment(assign_num, overwrite, students=STUDENT_LIST):
@@ -257,9 +259,13 @@ def grade_assignment(assign_num, overwrite, students=STUDENT_LIST):
     num_problems = int(config["Assignment"]["NumProblems"])
     submit_files = config["Assignment"]["Files"].split(",")
 
-    print(submit_files)
-    print(submit_files[0])
+
+    cur_num = 0
+    total_files = len(students) * len(problems) + len(students)
     for (name, email, section) in students:
+        cur_num = cur_num + 1
+        cmd_utils.progress(cur_num, total_files, name)
+        
         """
         p = multiprocessing.Process(target=grade_student, args=((name, email, section),
                                                              assign_num,
@@ -271,12 +277,13 @@ def grade_assignment(assign_num, overwrite, students=STUDENT_LIST):
                                                              grading_file_list))
         p.start()
         """
-        grade_student(assign_num,
+        cur_num = grade_student(assign_num,
                         (name, email, section),
                         os.path.join("asgt0%i-ready" %assign_num, name, "%s-%s" %(name, submit_files[0])),
                         config,
                         problems,
-                        grading_file_list)
+                        grading_file_list,
+                        cur_num, total_files)
     
 
 

@@ -11,6 +11,7 @@ import glob
 import time
 import datetime
 from grading_scripts import student_list
+import cmd_utils
 import re
 import configparser
 
@@ -144,8 +145,14 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
 
     return_list = []
 
-   
+    print("Gathering Files\n")
+
+    cur_student = 1
+    total_students = len(stdt_list)
+
     for (student, email, section) in stdt_list:
+        cmd_utils.progress(cur_student, total_students, student)
+        cur_student = cur_student + 1
         #print("%s : %s" %(student, email))
         possibleFiles = glob.glob(os.path.join(source_dir, "*" + anyCase(email) + "*"))
         if len(possibleFiles) == 0:
@@ -221,6 +228,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
             if not found:
                 missing_list.append(f)
         return_list.append((student, present_list, missing_list))
+    print("\n")
     return return_list
 
   
