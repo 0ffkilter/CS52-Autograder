@@ -8,7 +8,7 @@ fun test_3_error information help function arg1 arg2 arg3 error =
 				res
 		end
 	in
-		if error_help function arg1 arg2 arg_3 error = true
+		if error_help function arg1 arg2 arg3 error = true
 			then print (information ^ ":\t PASS\n" )
 		else
 			print (information ^ ":\t FAIL\n\t" ^ help)
