@@ -11,5 +11,5 @@ fun test_1_error information help function arg1 error =
 		if error_help function arg1 error = true
 			then print (information ^ ":\t PASS\n" )
 		else
-			print (information ^ ":\t FAIL\n\t" ^ help)
+			print (information ^ ":\t FAIL\n\t" ^ help ^ "\n")
 	end;
