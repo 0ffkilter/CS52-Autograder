@@ -10,6 +10,24 @@ from subprocess import PIPE, check_output
 from platform import platform
 
 
+def print_file(file, asgt):
+    """
+    Prints a file
+
+    file_name:          name of file to print
+    asgt_name:          Title of file
+
+    Return Value: none
+    """
+    try:
+
+        cmd = r'lpr %s -T %s -P %s -o cpi=14 -o lpi=8 -o sides=two-sided-long-edge -o page-left=72 -o page-right=72 -o prettyprint' %(file, asgt, PRINTER_NAME)
+        proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+        result = proc.communicate()[0].decode("utf-8").splitlines()
+    except:
+        print('lpr error \n')
+        return;
+
 
 def run_string(command, timeout=5, output_file=".tmp.sml", delete=True):
     """Returns output of running a string through the sml interpreter

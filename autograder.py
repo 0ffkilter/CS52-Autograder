@@ -8,6 +8,26 @@ from grading_scripts.student_list import STUDENT_LIST
 import grading_utils
 
 
+def print_student(assign_num, student, files=None):
+    if files=None:
+        config = configparser.ConfigParser()
+        config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
+        files = config["Assignment"]["Files"].split(",")
+
+    for f in files:
+        file_name = os.path.join("asgt0%i-ready" %(assign_num), student, "%s-%s" %(student, f))
+        cmd_utils.print_file(file_name, assign_num)
+
+
+def print_assignment(assign_num, student_list=STUDENT_LIST):
+    config = configparser.ConfigParser()
+    config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
+    files = config["Assignment"]["Files"].split(",")
+    
+    for (name, email, section) in student_list:
+        print_student(assign_num, student, files)
+
+
 def gather_files(assign_num, overwrite=False):
     result = file_utils.gather_assignment(assign_num, overwrite)
     file_string = ""
@@ -24,7 +44,7 @@ def gather_files(assign_num, overwrite=False):
     return (result, file_string)
 
 
-def gather_files_student(assign_num, student_name):
+def gather_files_student(assign_num, overwrite, student_name):
     result = file_utils.refresh_file(assign_num, student_name)
 
 
@@ -43,12 +63,12 @@ def check_files(assign_num):
         print("\t" + i)
 
 
-def check_files(assign_num, student_name):
+def check_files_student(assign_num, student_name):
     result = file_utils.check_files(file_utils.get_files(
         assign_num), os.path.join("asgt0%i-ready" % (assign_num), student_name))
 
 
-def grade_assignment(assign_num, students=STUDENT_LIST):
+def grade_assignment(assign_num, overwrite, students=STUDENT_LIST):
 
     # First we gather the files, but don't overwrite them:
     
@@ -60,7 +80,7 @@ def grade_assignment(assign_num, students=STUDENT_LIST):
     num_points = config["Assignment"]["TotalPoints"]
     style_points = config["Assignment"]["StylePoints"]
     num_problems = int(config["Assignment"]["NumProblems"])
-    submit_files = config["Assignment"]["File"].split(",")
+    submit_files = config["Assignment"]["Files"].split(",")
 
    
     file_list = file_utils.move_files(submit_files, "asgt0%i-submissions" %(assign_num), "asgt0%i-ready" %(assign_num))
@@ -144,8 +164,13 @@ def grade_assignment(assign_num, students=STUDENT_LIST):
         
 
 
-def grade_student(assign_num, student_name):
-    grade_assignment(assign_num, [student_name])
+def grade_assignment_student(assign_num, overwrite, student_name):
+
+    to_grade = []
+    for (name, email, section) in student_list.STUDENT_LIST:
+        if student_name in name or student_name in email:
+        to_grade.append((name, email, section))
+    grade_assignment(assign_num, overwrite, to_grade)
 
 
 def main():
@@ -156,7 +181,7 @@ def main():
     Gathers files automatically.
     """)
 
-    parser.add_argument('--gather', action='store', dest='grade', default=-1, type=int, help="""
+    parser.add_argument('--gather', action='store', dest='gather', default=-1, type=int, help="""
     Gather assignment files (or one student's), but do not grade.
     """)
 
@@ -177,8 +202,33 @@ def main():
     """)
 
     res = parser.parse_args()
-    print(res)
+    
+    if res.gather is not -1:
+        if res.student is not None:
+            gather_files_student(res.gather, res.overwrite, res.student)
+        else:
+            gather_files(res.gather, res.overwrite)
 
-    grade_assignment(1)
+
+    if res.check is not -1:
+        if res.student is not None:
+            check_files(res.check, res.student)
+        else:
+            check_files(res.check)
+
+
+    if res.grade is not -1:
+        if res.student is not None:
+            grade_assignment_student(res.grade, res.overwrite, res.student)
+        else:
+            grade_assignment(res.grade, res.overwrite)
+
+    if res.print is not -1:
+        if res.student is not None:
+            print_files_student(res.gather, res.student)
+        else:
+            print_files(res.gather)
+
+
 
 main()

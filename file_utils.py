@@ -203,9 +203,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
             file_tgt_name = os.path.join(file_tgt_dir, "%s-%s" %(student, n))
             present_list.append(n)
             if not overwrite:
-        
                 if not os.path.exists(file_tgt_name):
-
                     shutil.copy(file_src_name, file_tgt_name)
                 
             else:
