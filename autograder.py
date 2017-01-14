@@ -23,7 +23,7 @@ def print_assignment(assign_num, student_list=STUDENT_LIST):
     config = configparser.ConfigParser()
     config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
     files = config["Assignment"]["Files"].split(",")
-    
+
     for (name, email, section) in student_list:
         print_student(assign_num, student, files)
 
@@ -58,7 +58,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
     num_problems = int(config["Assignment"]["NumProblems"])
     submit_files = config["Assignment"]["Files"].split(",")
 
-    #Gather the files  
+    #Gather the files
     file_list = file_utils.move_files(submit_files, "asgt0%i-submissions" %(assign_num), "asgt0%i-ready" %(assign_num))
 
     problem_config = []
@@ -69,9 +69,9 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
                 problem_config.append(("%i%s" %(cur_num, sub_problem), config["%i%s" %(cur_num, sub_problem)]))
         else:
             problem_config.append((str(cur_num), config[str(cur_num)]))
-        
 
-    
+
+
     # Generate sml subfiles
 
     # Generate list of strings for each problem
@@ -86,7 +86,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
         pre_string = "\n\n(*=====================Grader Code=====================*)\n"
 
         # Read from each of the req files
-     
+
         for r in req_list:
             with open(r, "r") as f:
                 pre_string = pre_string + f.read() + "\n"
@@ -113,14 +113,14 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
     for (student, email, section) in students:
 
         # problems are 1 indexed
-        
+
         # For each of the problem strings
         for (name, pre_string, post_string) in problem_strings:
             # Generate a flag to partition the file
             flag = ""
             if len(name) > 1:
                 if name[-1].isalpha():
-                    if int(name[:-1]) < 10:    
+                    if int(name[:-1]) < 10:
                         flag = flag + "0%i_0%s" % (assign_num, name)
                     else:
                         flag = flag + "0%i_%s" % (assign_num, name)
@@ -147,7 +147,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
 
                 g_file.write(post_string)
 
-    
+
     return grading_file_list
 
 def gather_files_student(assign_num, overwrite, student_name):
@@ -160,7 +160,7 @@ def gather_files_student(assign_num, overwrite, student_name):
 def grade_student(assign_num, student, student_file, config, problems, grading_file_list, cur_progress, total_points):
 
     (name, email, section) = student
-   
+
 
     output_string = ""
     summary_list = []
@@ -171,17 +171,17 @@ def grade_student(assign_num, student, student_file, config, problems, grading_f
         cmd_utils.progress(cur_progress, total_points, "%s : %s" %(name, p))
         cur_path = os.path.join("asgt0%i-ready" %(assign_num), name, "grading", f)
         output = cmd_utils.run_file(cur_path)
-        
+
         problem_string = "Problem %s:\n" %(p)
         idx = output.find("(*BEGIN*)")
-        
+
         num_passed = 0
         num_failed = 0
         if idx == -1:
             problem_string = problem_string + "Failed to Compile %s\n"
             num_not_compiled = num_not_compiled + 1
         else:
-            parsed_output = output[idx + 9:]   
+            parsed_output = output[idx + 9:]
             problem_string = problem_string + parsed_output + "\n"
             num_passed = parsed_output.count("PASS")
             num_failed = parsed_output.count("FAIL")
@@ -200,11 +200,11 @@ def grade_student(assign_num, student, student_file, config, problems, grading_f
 
         summary_list.append((p, deduction))
         output_string = output_string + problem_string
- 
+
 
     output_string = output_string + "\n\n=====Summary:=====\n\n"
 
-    output_string = output_string + ("Deductions:\nProblem | Points Taken\n" + 
+    output_string = output_string + ("Deductions:\nProblem | Points Taken\n" +
                     "\n".join([p.ljust(7) + "|" + str(d).rjust(10) for (p,d) in summary_list]))
 
     (too_long, contains_tab, comments, linecount) = grading_utils.format_check(student_file)
@@ -236,7 +236,7 @@ def grade_student(assign_num, student, student_file, config, problems, grading_f
 
     output_string = output_string + "Style Points:       %i/%i\n" %(style_points, total_style_points)
     output_string = output_string + "Correctness Points: %i/%i\n" %(total_points - total_deduction, total_points)
-    
+
 
     output_string = output_string + "\n=====Grader Comments======\n\n\n\n\n\n\n\n\n\n"
     output_string = output_string + "Total Points:       %i/%i\n" %(style_points + total_points - total_deduction, total_points + total_style_points)
@@ -265,12 +265,12 @@ def grade_assignment(assign_num, overwrite, students=STUDENT_LIST):
     for (name, email, section) in students:
         cur_num = cur_num + 1
         cmd_utils.progress(cur_num, total_files, name)
-        
+
         """
         p = multiprocessing.Process(target=grade_student, args=((name, email, section),
                                                              assign_num,
                                                              os.path.join("asgt0%i-ready" %assign_num,
-                                                                        name, 
+                                                                        name,
                                                                         "%s-%s" %(name, submit_files[0])),
                                                              config,
                                                              problems,
@@ -284,8 +284,8 @@ def grade_assignment(assign_num, overwrite, students=STUDENT_LIST):
                         problems,
                         grading_file_list,
                         cur_num, total_files)
-    
 
+    print("\n")
 
 def grade_assignment_student(assign_num, overwrite, student_name):
     to_grade = []
@@ -299,7 +299,7 @@ def main():
     parser = argparse.ArgumentParser(formatter_class=RawTextHelpFormatter)
 
     parser.add_argument('--grade', action='store', dest='grade', default=-1, type=int, help="""
-    Grade the assignment.  Provide assignment number (1,2,etc...) 
+    Grade the assignment.  Provide assignment number (1,2,etc...)
     Gathers files automatically.
     """)
 
@@ -308,11 +308,11 @@ def main():
     """)
 
     parser.add_argument('--check', action='store', dest='check', default=-1, type=int, help="""
-    Check integrity of files, or refresh student files.  
+    Check integrity of files, or refresh student files.
     """)
 
     parser.add_argument('--print', action='store', dest='print', default=-1, type=int, help="""
-    Print assignment, or student's files.  
+    Print assignment, or student's files.
     """)
 
     parser.add_argument('--student', action='store', dest='student', default=None, type=str, help="""
@@ -320,11 +320,11 @@ def main():
     """)
 
     parser.add_argument('-overwrite', action='store_true', dest='overwrite', help="""
-    [optional] force refresh the files, overwriting any changes made to local files.  
+    [optional] force refresh the files, overwriting any changes made to local files.
     """)
 
     res = parser.parse_args()
-    
+
     if res.gather is not -1:
         if res.student is not None:
             gather_files_student(res.gather, res.overwrite, res.student)

@@ -17,7 +17,7 @@ import configparser
 
 #Directory Error
 class DirectoryNotFound(OSError):
-    pass    
+    pass
 
 #Student Error
 class StudentNotFound(LookupError):
@@ -90,7 +90,7 @@ def gather_assignment(assign_number, overwrite=False, student_list=student_list.
 
     assign_number:  which assignment
     student_list:   list of kiddos
-    
+
     files = get_files(assign_number)
     src_dir = "asgt0%i-submissions" %(assign_number)
     tgt_dir = "asgt0%i-ready" %(assign_number)
@@ -121,17 +121,17 @@ def refresh_file(assign_num, student_name, student_list=student_list.STUDENT_LIS
     src_dir = "asgt0%i-submissions" %(assign_num)
     tgt_dir = "asgt0%i-ready" %(assign_num)
     return move_files(files, src_dir, tgt_dir, [student_name])
-    
+
 
 def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student_list.STUDENT_LIST):
-    """ Moves students' files from source to target dir 
+    """ Moves students' files from source to target dir
 
     files:          which files to move
     source_dir:     where to look
     target_dir:     where to move
     stdt_list:      list of students
     """
-    
+
     if not os.path.exists(source_dir):
         if re.match("(asgt0)([1-9]{1})(-submissions)", source_dir) is None:
             raise FileNotFoundError("Source Destination doesn't exist")
@@ -194,9 +194,9 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
                                     new_file_list.append((cur_path, file_name, timestamp))
                             if not found:
                                 new_file_list.append((dirpath, f, time))
-                                
-                            file_list = new_file_list 
-                            
+
+                            file_list = new_file_list
+
 
         #okay, so now file_list contains triples of (directory, name, time) - time to record the missing ones
 
@@ -204,7 +204,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
         missing_list = []
         file_tgt_dir = os.path.join(target_dir, student)
 
-        
+
         if not os.path.exists(file_tgt_dir):
             os.makedirs(file_tgt_dir)
         for (d, n, t) in file_list:
@@ -214,7 +214,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
             if not overwrite:
                 if not os.path.exists(file_tgt_name):
                     shutil.copy(file_src_name, file_tgt_name)
-                
+
             else:
                 os.remove(file_tgt_name)
                 shutil.copy(file_src_name, file_tgt_name)
@@ -228,7 +228,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
             if not found:
                 missing_list.append(f)
         return_list.append((student, present_list, missing_list))
-    print("\n")
+    print("\nFinishing Up...")
     return return_list
 
-  
+

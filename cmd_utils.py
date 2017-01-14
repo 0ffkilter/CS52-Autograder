@@ -26,13 +26,13 @@ def progress(count, total, suffix=''):
     if percents == 100.0:
         bar = '=' * (filled_len - 1) + '>' + '-' * (bar_len - filled_len)
 
-        sys.stdout.write('\x1b[6;30;42m' + '[%s] %s%s ...%s\r\x1b[0m' % (bar, percents, '%', suffix.ljust(20)))
-        sys.stdout.flush()  
+        sys.stdout.write('\x1b[4;32;40m' + '[%s] %s%s ...%s\r\x1b[0m' % (bar, percents, '%', "Done!".ljust(20)))
+        sys.stdout.flush()
     else:
         bar = '=' * (filled_len - 1) + '>' + '-' * (bar_len - filled_len)
 
-        sys.stdout.write('\x1b[5;30;43m' + '[%s] %s%s ...%s\r\x1b[0m' % (bar, percents, '%', suffix.ljust(20)))
-        sys.stdout.flush()  
+        sys.stdout.write('\x1b[4;33;40m' + '[%s] %s%s ...%s\r\x1b[0m' % (bar, percents, '%', suffix.ljust(20)))
+        sys.stdout.flush()
 
 
 def print_file(file, asgt):
@@ -72,7 +72,7 @@ def run_string(command, timeout=5, output_file=".tmp.sml", delete=True):
 
 def run_file(read_file, timeout=5, delete=False):
     """Runs a file through the sml intpreter
-    
+
     read_file:      file to run
     timeout:        timeout of command
     delete:         do we delete the file afterwards
