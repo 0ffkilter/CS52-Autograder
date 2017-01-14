@@ -6,10 +6,10 @@ import file_utils
 import configparser
 from grading_scripts.student_list import STUDENT_LIST
 import grading_utils
-
+import multiprocessing
 
 def print_student(assign_num, student, files=None):
-    if files=None:
+    if files==None:
         config = configparser.ConfigParser()
         config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
         files = config["Assignment"]["Files"].split(",")
@@ -26,27 +26,6 @@ def print_assignment(assign_num, student_list=STUDENT_LIST):
     
     for (name, email, section) in student_list:
         print_student(assign_num, student, files)
-
-
-def gather_files(assign_num, overwrite=False):
-    result = file_utils.gather_assignment(assign_num, overwrite)
-    file_string = ""
-    for (student, present_list, missing_list) in result:
-        if missing_list is not []:
-            file_string = "%s%s\n" % (file_string, student)
-            for f in missing_list:
-                file_string = "%s\t%s\n" % (file_string, f)
-                file_string = file_string + "\n\n"
-
-    with open(os.path.join("asgt0%i-ready" % (assign_num), "missing.txt"), "w+") as missing_file:
-        missing_file.write(file_string)
-
-    return (result, file_string)
-
-
-def gather_files_student(assign_num, overwrite, student_name):
-    result = file_utils.refresh_file(assign_num, student_name)
-
 
 def check_files(assign_num):
     result = file_utils.check_assignment(assign_num)
@@ -68,12 +47,9 @@ def check_files_student(assign_num, student_name):
         assign_num), os.path.join("asgt0%i-ready" % (assign_num), student_name))
 
 
-def grade_assignment(assign_num, overwrite, students=STUDENT_LIST):
+def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
 
-    # First we gather the files, but don't overwrite them:
-    
-
-    # Load the config file
+     # Load the config file
     config = configparser.ConfigParser()
 
     config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
@@ -82,28 +58,32 @@ def grade_assignment(assign_num, overwrite, students=STUDENT_LIST):
     num_problems = int(config["Assignment"]["NumProblems"])
     submit_files = config["Assignment"]["Files"].split(",")
 
-   
+    #Gather the files  
     file_list = file_utils.move_files(submit_files, "asgt0%i-submissions" %(assign_num), "asgt0%i-ready" %(assign_num))
 
     problem_config = []
     for i in range(num_problems):
         cur_num = i + 1
-        problem_config.append((str(cur_num), config[str(cur_num)]))
-        if "Subproblems" in config[str(cur_num)]:
-            for sub_problem in config[str(cur_num)]["Subproblems"].split(","):
+        if "Problems" in config[str(cur_num)]:
+            for sub_problem in config[str(cur_num)]["Problems"].split(","):
                 problem_config.append(("%i%s" %(cur_num, sub_problem), config["%i%s" %(cur_num, sub_problem)]))
+        else:
+            problem_config.append((str(cur_num), config[str(cur_num)]))
+        
 
+    
     # Generate sml subfiles
 
     # Generate list of strings for each problem
 
+    grading_file_list = []
     problem_strings = []
     #[(pre_string, post_string)]
     for name, problem in problem_config:
         req_list = grading_utils.get_requirements(problem["requirements"], assign_num)
 
         # Fancy formatting
-        pre_string = "\n\n(*=====================Grader Code=====================*)\n\n"
+        pre_string = "\n\n(*=====================Grader Code=====================*)\n"
 
         # Read from each of the req files
      
@@ -125,8 +105,10 @@ def grade_assignment(assign_num, overwrite, students=STUDENT_LIST):
 
         # Put into a list
         problem_strings.append((name, pre_string, post_string))
+        grading_file_list.append(name)
 
     # now for each student
+
 
     for (student, email, section) in students:
 
@@ -159,17 +141,150 @@ def grade_assignment(assign_num, overwrite, students=STUDENT_LIST):
                 os.makedirs(os.path.join("asgt0%i-ready" % (assign_num), student, "grading"))
             with open(os.path.join("asgt0%i-ready" % (assign_num), student, "grading", "asgt0%i_%s.sml" % (assign_num, name)), "w+") as g_file:
 
-                g_file.write(content_string + pre_string + post_string)
-            
-        
+                g_file.write(content_string + pre_string)
 
+                g_file.write("\nval _ = print(\"(*BEGIN*)\\n\");\n")
 
-def grade_assignment_student(assign_num, overwrite, student_name):
+                g_file.write(post_string)
 
+    
+    return grading_file_list
+
+def gather_files_student(assign_num, overwrite, student_name):
     to_grade = []
     for (name, email, section) in student_list.STUDENT_LIST:
         if student_name in name or student_name in email:
-        to_grade.append((name, email, section))
+            to_grade.append((name, email, section))
+    return gather_files(assign_num, overwrite, to_grade)
+
+def grade_student(assign_num, student, student_file, config, problems, grading_file_list):
+
+    (name, email, section) = student
+    print("Grading %s" %(name))
+
+    output_string = ""
+    summary_list = []
+    num_not_compiled = 0
+    for p, f in zip(problems, grading_file_list):
+        cur_path = os.path.join("asgt0%i-ready" %(assign_num), name, "grading", f)
+        output = cmd_utils.run_file(cur_path)
+        
+        problem_string = "Problem %s:\n" %(p)
+        idx = output.find("(*BEGIN*)")
+        
+        num_passed = 0
+        num_failed = 0
+        if idx == -1:
+            problem_string = problem_string + "Failed to Compile %s"
+            num_not_compiled = num_not_compiled + 1
+        else:
+            parsed_output = output[idx + 9:]   
+            problem_string = problem_string + parsed_output + "\n"
+            num_passed = parsed_output.count("PASS")
+            num_failed = parsed_output.count("FAIL")
+        num_halted = int(config[p]["Tests"]) - num_passed - num_failed
+
+
+        num_points = float(config[p]["Points"])
+
+        points_given = 0
+
+        deduction = (num_halted + num_failed) * 0.5
+        if num_passed == 0:
+            deduction = num_points
+        else:
+            deduction = min(num_points-0.5, deduction)
+
+        summary_list.append((p, deduction))
+        output_string = output_string + problem_string
+
+    output_string = output_string + "\n\n=====Summary:=====\n\n"
+
+    output_string = output_string + ("Deductions:\nProblem | Points Taken" + 
+                    "\n".join([p.ljust(7) + "|" + str(d).rjust(10) for (p,d) in summary_list]))
+
+    (too_long, contains_tab, comments, linecount) = grading_utils.format_check(student_file)
+
+    output_string = output_string + "\nStyle:\n"
+
+    total_style_points = int(config["Assignment"]["StylePoints"])
+    style_points = total_style_points
+    if num_not_compiled > 0:
+        style_points = style_points - 0.5
+
+    if too_long > 20:
+        style_points = style_points - 0.5
+
+    if contains_tab > 0:
+        style_points = style_points - 0.5
+
+
+    output_string = output_string + "Characters:  %i\n" %(too_long)
+    output_string = output_string + "Num Tabs  :  %i\n" %(contains_tab)
+    output_string = output_string + "Comments  :  %i\n" %(comments)
+
+    output_string = output_string + "\nTotals:\n"
+
+
+    total_points = int(config["Assignment"]["TotalPoints"])
+
+    total_deduction = sum([b for (a,b) in summary_list])
+
+    output_string = output_string + "Style Points:       %i/%i\n" %(style_points, total_style_points)
+    output_string = output_string + "Correctness Points: %i/%i\n" %(total_points - total_deduction, total_points)
+    
+
+    output_string = output_string + "\n=====Grader Comments======\n\n\n\n\n\n\n\n\n\n"
+    output_string = output_string + "Total Points:       %i/%i\n" %(style_points + total_points - total_deduction, total_points + total_style_points)
+    grade_path = os.path.join("asgt0%i-ready" %(assign_num), name, "grades.txt")
+    with open(grade_path, "w+") as f:
+        f.write(output_string)
+
+
+    print("Done with %s" %(name))
+
+
+
+def grade_assignment(assign_num, overwrite, students=STUDENT_LIST):
+    problems = gather_files(assign_num, overwrite, students)
+    grading_file_list = ["asgt0%i_%s.sml" %(assign_num, n) for n in problems]
+
+    config = configparser.ConfigParser()
+
+    config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
+    num_points = config["Assignment"]["TotalPoints"]
+    style_points = config["Assignment"]["StylePoints"]
+    num_problems = int(config["Assignment"]["NumProblems"])
+    submit_files = config["Assignment"]["Files"].split(",")
+
+    print(submit_files)
+    print(submit_files[0])
+    for (name, email, section) in students:
+        """
+        p = multiprocessing.Process(target=grade_student, args=((name, email, section),
+                                                             assign_num,
+                                                             os.path.join("asgt0%i-ready" %assign_num,
+                                                                        name, 
+                                                                        "%s-%s" %(name, submit_files[0])),
+                                                             config,
+                                                             problems,
+                                                             grading_file_list))
+        p.start()
+        """
+        grade_student(assign_num,
+                        (name, email, section),
+                        os.path.join("asgt0%i-ready" %assign_num, name, "%s-%s" %(name, submit_files[0])),
+                        config,
+                        problems,
+                        grading_file_list)
+    
+
+
+def grade_assignment_student(assign_num, overwrite, student_name):
+    to_grade = []
+    for (name, email, section) in student_list.STUDENT_LIST:
+        if student_name in name or student_name in email:
+            to_grade.append((name, email, section))
     grade_assignment(assign_num, overwrite, to_grade)
 
 
@@ -229,6 +344,9 @@ def main():
         else:
             print_files(res.gather)
 
+    grade_assignment(1, False)
 
 
-main()
+
+if __name__ == '__main__':
+    main()

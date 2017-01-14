@@ -60,7 +60,7 @@ def split_string(string, flag):
                         currentFlags.discard(flagName)
             echo = 0 < len(currentFlags)
         elif echo:
-            result = result + line
+            result = result + "\n" + line
     return result
 
 

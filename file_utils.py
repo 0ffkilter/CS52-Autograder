@@ -128,7 +128,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
     target_dir:     where to move
     stdt_list:      list of students
     """
-    print("foo")
+    
     if not os.path.exists(source_dir):
         if re.match("(asgt0)([1-9]{1})(-submissions)", source_dir) is None:
             raise FileNotFoundError("Source Destination doesn't exist")
@@ -142,9 +142,9 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
 
     return_list = []
 
-
+   
     for (student, email, section) in stdt_list:
-        print("%s : %s" %(student, email))
+        #print("%s : %s" %(student, email))
         possibleFiles = glob.glob(os.path.join(source_dir, "*" + anyCase(email) + "*"))
         if len(possibleFiles) == 0:
             return_list.append((student, []))

@@ -45,7 +45,7 @@ def run_string(command, timeout=5, output_file=".tmp.sml", delete=True):
     return run_file(output_file, timeout, delete)
 
 
-def run_file(read_file, timeout=5, delete=True):
+def run_file(read_file, timeout=5, delete=False):
     """Runs a file through the sml intpreter
     
     read_file:      file to run
@@ -59,6 +59,7 @@ def run_file(read_file, timeout=5, delete=True):
     cmd = "%s %s | sml" %(prefix, read_file)
 
     output = check_output(cmd, shell=True, timeout=timeout)
+    output = output.decode('ascii')
 
     if delete:
         os.remove(read_file)
