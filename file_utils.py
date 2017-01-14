@@ -12,7 +12,7 @@ import time
 import datetime
 from grading_scripts import student_list
 import re
-
+import configparser
 
 #Directory Error
 class DirectoryNotFound(OSError):
@@ -23,12 +23,15 @@ class StudentNotFound(LookupError):
     pass
 
 
-def get_files(assign_number):
+def get_files(assign_num):
     """ Returns the files associated with each assignment
 
     assign_number:  which assignment number
     """
-    return ASSIGNMENT_FILES.get(assign_number, None)
+    config = configparser.ConfigParser()
+    config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
+    files = config["Assignment"]["Files"].split(",")
+    return files
 
 def check_assignment(assign_number):
     """ Checks the integrity of an assignment's files
@@ -46,11 +49,10 @@ def check_files(files, file_dir, student_list=student_list.STUDENT_LIST):
     file_list = []
     for (directory, sub_dirs, sub_files) in os.walk(file_dir):
         if any([os.path.basename(directory) == a for (a,b,c) in student_list]):
-            print("foo")
             files_present = []
             files_missing = []
             for f in files:
-                if f in sub_files:
+                if "%s-%s" %(os.path.basename(directory), f) in sub_files:
                     files_present.append(f)
                 else:
                     files_missing.append(f)

@@ -344,8 +344,6 @@ def main():
         else:
             print_files(res.gather)
 
-    grade_assignment(1, False)
-
 
 
 if __name__ == '__main__':
