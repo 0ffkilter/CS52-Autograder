@@ -259,7 +259,7 @@ def grade_assignment(assign_num, overwrite, students=STUDENT_LIST):
     num_problems = int(config["Assignment"]["NumProblems"])
     submit_files = config["Assignment"]["Files"].split(",")
 
-
+    print("Grading asgt0%i" %(assign_num))
     cur_num = 0
     total_files = len(students) * len(problems) + len(students)
     for (name, email, section) in students:

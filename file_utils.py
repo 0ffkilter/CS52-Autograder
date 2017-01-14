@@ -145,7 +145,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
 
     return_list = []
 
-    print("Gathering Files\n")
+    print("Gathering Files")
 
     cur_student = 1
     total_students = len(stdt_list)

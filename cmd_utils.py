@@ -22,10 +22,17 @@ def progress(count, total, suffix=''):
     filled_len = int(round(bar_len * count / float(total)))
 
     percents = round(100.0 * count / float(total), 1)
-    bar = '=' * filled_len + '-' * (bar_len - filled_len)
 
-    sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', suffix.ljust(6)))
-    sys.stdout.flush()  
+    if percents == 100.0:
+        bar = '=' * (filled_len - 1) + '>' + '-' * (bar_len - filled_len)
+
+        sys.stdout.write('\x1b[6;30;42m' + '[%s] %s%s ...%s\r\x1b[0m' % (bar, percents, '%', suffix.ljust(20)))
+        sys.stdout.flush()  
+    else:
+        bar = '=' * (filled_len - 1) + '>' + '-' * (bar_len - filled_len)
+
+        sys.stdout.write('\x1b[5;30;43m' + '[%s] %s%s ...%s\r\x1b[0m' % (bar, percents, '%', suffix.ljust(20)))
+        sys.stdout.flush()  
 
 
 def print_file(file, asgt):
