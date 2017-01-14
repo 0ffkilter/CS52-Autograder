@@ -175,7 +175,7 @@ def grade_student(assign_num, student, student_file, config, problems, grading_f
         num_passed = 0
         num_failed = 0
         if idx == -1:
-            problem_string = problem_string + "Failed to Compile %s"
+            problem_string = problem_string + "Failed to Compile %s\n"
             num_not_compiled = num_not_compiled + 1
         else:
             parsed_output = output[idx + 9:]   
@@ -200,7 +200,7 @@ def grade_student(assign_num, student, student_file, config, problems, grading_f
 
     output_string = output_string + "\n\n=====Summary:=====\n\n"
 
-    output_string = output_string + ("Deductions:\nProblem | Points Taken" + 
+    output_string = output_string + ("Deductions:\nProblem | Points Taken\n" + 
                     "\n".join([p.ljust(7) + "|" + str(d).rjust(10) for (p,d) in summary_list]))
 
     (too_long, contains_tab, comments, linecount) = grading_utils.format_check(student_file)
