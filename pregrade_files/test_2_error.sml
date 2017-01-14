@@ -1,4 +1,4 @@
-fun test1_error information help function arg1 arg2 error =
+fun test_2_error information help function arg1 arg2 error =
 	let 
 		fun error_help func arg arg_2 err = 
 			let 

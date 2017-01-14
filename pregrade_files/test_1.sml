@@ -1,4 +1,4 @@
-fun test1 information help function arg1 retval =
+fun test_1 information help function arg1 retval =
 	if function arg1 = retval
 		then print(information ^ ":\t PASS\n")
 	else

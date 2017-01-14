@@ -1,4 +1,4 @@
-fun test1 information help value expected =
+fun value_compare information help value expected =
 	if value = expected
 		then print(information ^ ":\t PASS\n")
 	else
