@@ -6,7 +6,6 @@ Everett "Rett" Bull
 January, 2017
 """
 import os
-
 import re
 
 

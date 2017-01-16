@@ -10,10 +10,10 @@ import shutil
 import glob
 import time
 import datetime
-from grading_scripts import student_list
 import cmd_utils
 import re
 import configparser
+from grading_scripts import student_list
 
 #Directory Error
 class DirectoryNotFound(OSError):

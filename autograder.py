@@ -1,54 +1,87 @@
 import argparse
-from argparse import RawTextHelpFormatter
 import os
 import cmd_utils
 import file_utils
 import configparser
-from grading_scripts.student_list import STUDENT_LIST
 import grading_utils
 import multiprocessing
+from argparse import RawTextHelpFormatter
+from grading_scripts.student_list import STUDENT_LIST
 
 def print_student(assign_num, student, files=None):
-    if files==None:
-        config = configparser.ConfigParser()
-        config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
-        files = config["Assignment"]["Files"].split(",")
+    """Prints a student's files - grabs from from config if no files are
+        specified
 
+    assign_num:         assignment number
+    student:            which student to print
+    files:              what to print (takes from config if none are given)
+
+                        You don't need to specify the name with the file -
+                        if you want to print asgt01.sml it will print
+                        $student$-asgt01.sml
+    """
+
+    if files==None:
+        files = file_utils.get_files(assign_num)
     for f in files:
-        file_name = os.path.join("asgt0%i-ready" %(assign_num), student, "%s-%s" %(student, f))
+        file_name = os.path.join("asgt0%i-ready" %(assign_num),
+                                    student,
+                                    "%s-%s" %(student, f))
         cmd_utils.print_file(file_name, assign_num)
 
 
 def print_assignment(assign_num, student_list=STUDENT_LIST):
-    config = configparser.ConfigParser()
-    config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
-    files = config["Assignment"]["Files"].split(",")
+    """Prints out an assignemnt files, with the file list taken from the config
+
+    assign_num:         assignment_number
+    student_list:       list of students to print (defaults to all)
+    """
+
+    files = file_utils.get_files(assign_num)
 
     for (name, email, section) in student_list:
         print_student(assign_num, student, files)
 
-def check_files(assign_num):
+def check_files(assign_num, verbose=True):
+    """Checks which file are present or missing
+
+    assign_num:         which assignment to check
+
+    """
     result = file_utils.check_assignment(assign_num)
 
     missing_files = file_utils.get_files_missing(result)
     present_files = file_utils.get_files_present(result)
 
-    print("Present Files:\n")
-    for i in present_files:
-        print("\t" + i)
+    if verbose is True:
+        print("Present Files:\n")
+        for i in present_files:
+            print("\t" + i)
 
-    print("Missing Files:\n")
-    for i in missing_files:
-        print("\t" + i)
+        print("Missing Files:\n")
+        for i in missing_files:
+            print("\t" + i)
 
+    return (present_files, missing_files)
 
 def check_files_student(assign_num, student_name):
+    """Checks the files for one student
+
+    assign_num:         assignment number
+    student_name:       student to check
+    """
     result = file_utils.check_files(file_utils.get_files(
         assign_num), os.path.join("asgt0%i-ready" % (assign_num), student_name))
 
 
 def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
+    """Gathers the files for the appropriate assignment and copies them to
+    $assign_num$-ready and generates the sml grading subfiles for each student
 
+    assign_num:         assignment number
+    overwrite:          do you overwrite the files already in there?
+    students:           which students to use (default all)
+    """
      # Load the config file
     config = configparser.ConfigParser()
 
@@ -61,6 +94,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
     #Gather the files
     file_list = file_utils.move_files(submit_files, "asgt0%i-submissions" %(assign_num), "asgt0%i-ready" %(assign_num))
 
+    #Get the list of problems from the config file and get the appropriate information
     problem_config = []
     for i in range(num_problems):
         cur_num = i + 1
@@ -88,6 +122,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
         # Read from each of the req files
 
         for r in req_list:
+            if r.star
             with open(r, "r") as f:
                 pre_string = pre_string + f.read() + "\n"
 
@@ -109,9 +144,11 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
 
     # now for each student
 
-
+    print("Generating Subfiles")
+    cur_progress = 1
+    total_progress = len(students)
     for (student, email, section) in students:
-
+        cmd_utils.progress(cur_student, total_students, student)
         # problems are 1 indexed
 
         # For each of the problem strings
@@ -150,7 +187,13 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
 
     return grading_file_list
 
-def gather_files_student(assign_num, overwrite, student_name):
+def gather_files_student(assign_num, overwrite=False, student_name=""):
+    """Gather the files of a particular student
+
+    assign_num:         assignment number
+    overwrite:          do you overwrite the exsiting files
+    student_name        name to match for gathering
+    """
     to_grade = []
     for (name, email, section) in student_list.STUDENT_LIST:
         if student_name in name or student_name in email:
@@ -287,7 +330,14 @@ def grade_assignment(assign_num, overwrite, students=STUDENT_LIST):
 
     print("\n")
 
-def grade_assignment_student(assign_num, overwrite, student_name):
+def grade_assignment_student(assign_num, overwrite=False, student_name=""):
+    """grade assignments of students matching student_name
+
+    assign_num:         assignment number
+    overwite:           do you overwrite the existing files
+    student_name:       student name to match
+    """
+
     to_grade = []
     for (name, email, section) in student_list.STUDENT_LIST:
         if student_name in name or student_name in email:

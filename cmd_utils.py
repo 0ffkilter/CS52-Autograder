@@ -6,10 +6,9 @@ January, 2017
 """
 
 import os
+import sys
 from subprocess import PIPE, check_output
 from platform import platform
-import sys
-
 
 def progress(count, total, suffix=''):
     """
