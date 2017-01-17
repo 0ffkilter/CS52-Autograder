@@ -198,19 +198,21 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
                             file_list = new_file_list
 
 
-        #okay, so now file_list contains triples of (directory, name, time) - time to record the missing ones
-
         present_list = []
         missing_list = []
         file_tgt_dir = os.path.join(target_dir, student)
 
 
+        #Copy each file.  Create the dir
         if not os.path.exists(file_tgt_dir):
             os.makedirs(file_tgt_dir)
+
+        #For each file copy it over
         for (d, n, t) in file_list:
             file_src_name = os.path.join(d,n)
             file_tgt_name = os.path.join(file_tgt_dir, "%s-%s" %(student, n))
             present_list.append(n)
+            #If the overwrite flag isn't True, check before copy
             if not overwrite:
                 if not os.path.exists(file_tgt_name):
                     shutil.copy(file_src_name, file_tgt_name)
@@ -219,7 +221,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
                 os.remove(file_tgt_name)
                 shutil.copy(file_src_name, file_tgt_name)
 
-
+        #Get all the missing files
         for f in files:
             found = False
             for (d, n, t) in file_list:
@@ -227,8 +229,11 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
                     found = True
             if not found:
                 missing_list.append(f)
+
+        #Format
         return_list.append((student, present_list, missing_list))
     print("\nFinishing Up...")
+
     return return_list
 
 
