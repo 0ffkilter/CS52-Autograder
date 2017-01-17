@@ -10,6 +10,11 @@ import re
 
 
 def get_requirements(requirements, assign_num):
+    """Gets the requirements string from the path"
+    
+    requirements:   
+    """
+
     req_list = requirements.split(",")
     return_list = []
     for req in req_list:
