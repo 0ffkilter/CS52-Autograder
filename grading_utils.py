@@ -11,8 +11,8 @@ import re
 
 def get_requirements(requirements, assign_num):
     """Gets the requirements string from the path"
-    
-    requirements:   
+
+    requirements:
     """
 
     req_list = requirements.split(",")
@@ -23,10 +23,15 @@ def get_requirements(requirements, assign_num):
             cur_req = req.split("/")[-1]
             cur_path = os.path.join("CS52-GradingScripts",
                                     "asgt0%i" % (assign_num), cur_req + ".sml")
+            if os.path.exists(cur_path):
+                return_list.append(cur_path)
+        elif "$ASSIGN$" in req:
+            cur_req = req.split("/")[-1]
+            cur_req = "-%s-" %(cur_req)
         else:
             cur_path = os.path.join("pregrade_files", req + ".sml")
-        if os.path.exists(cur_path):
-            return_list.append(cur_path)
+            if os.path.exists(cur_path):
+                return_list.append(cur_path)
     return return_list
 
 

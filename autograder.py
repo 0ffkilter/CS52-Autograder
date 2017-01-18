@@ -120,12 +120,15 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
         pre_string = "\n\n(*=====================Grader Code=====================*)\n"
 
         # Read from each of the req files
-
+        problems = []
         for r in req_list:
-            if r.star
-            with open(r, "r") as f:
-                pre_string = pre_string + f.read() + "\n"
+            if r.startswith('-') and r.endswith('-'):
+                problems.append(r[1:-1])
+            else:
+                with open(r, "r") as f:
+                    pre_string = pre_string + f.read() + "\n"
 
+        problems.append(name)
         # Read from the script file
         post_string = ""
 
@@ -139,7 +142,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
             post_string = f_grade.read()
 
         # Put into a list
-        problem_strings.append((name, pre_string, post_string))
+        problem_strings.append((name, pre_string, problems, post_string))
         grading_file_list.append(name)
 
     # now for each student
@@ -148,7 +151,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
     cur_progress = 1
     total_progress = len(students)
     for (student, email, section) in students:
-        cmd_utils.progress(cur_student, total_students, student)
+        cmd_utils.progress(cur_progress, total_progress, student)
         # problems are 1 indexed
 
         # For each of the problem strings
@@ -159,22 +162,23 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
         with open(student_file, 'r') as s_file:
             student_code = s_file.read()
 
-        for (name, pre_string, post_string) in problem_strings:
+        for (name, pre_string, problems, post_string) in problem_strings:
             # Generate a flag to partition the file
             flag = ""
-            if len(name) > 1:
-                if name[-1].isalpha():
-                    if int(name[:-1]) < 10:
-                        flag = flag + "0%i_0%s" % (assign_num, name)
+            for p in problems:
+                if len(p) > 1:
+                    if p[-1].isalpha():
+                        if int(p[:-1]) < 10:
+                            flag = flag + "0%i_0%s" % (assign_num, p)
+                        else:
+                            flag = flag + "0%i_%s" % (assign_num, p)
                     else:
-                        flag = flag + "0%i_%s" % (assign_num, name)
+                        flag = flag + "0%i_%s" % (assign_num, p)
                 else:
-                    flag = flag + "0%i_%s" % (assign_num, name)
-            else:
-                if int(name) < 10:
-                    flag = flag + "0%i_0%s" % (assign_num, name)
-                else:
-                    flag = flag + "0%i_%s" % (assign_num, name)
+                    if int(p) < 10:
+                        flag = flag + "0%i_0%s" % (assign_num, p)
+                    else:
+                        flag = flag + "0%i_%s" % (assign_num, p)
 
             # Partition the student's file
             content_string = grading_utils.split_string(student_code, flag)
@@ -190,6 +194,8 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
 
                 g_file.write(post_string)
 
+        cur_progress = cur_progress + 1
+    print()
 
     return grading_file_list
 
