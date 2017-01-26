@@ -126,10 +126,10 @@ def check_files(files, file_dir, student_list=STUDENT_LIST):
             files_present = []
             files_missing = []
             for f in files:
-                if "%s-%s" %(os.path.basename(directory), f) in sub_files:
-                    files_present.append("%s-%s" %(os.path.basename(directory), f))
+                if "%s-%s" %(a, f) in sub_files:
+                    files_present.append("%s-%s" %(a, f))
                 else:
-                    files_missing.append("%s-%s" %(os.path.basename(directory), f))
+                    files_missing.append("%s-%s" %(a, f))
             file_list.append((directory, {"present":files_present, "missing":files_missing}))
     return file_list
 
