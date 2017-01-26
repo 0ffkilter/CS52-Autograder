@@ -10,10 +10,11 @@ import shutil
 import glob
 import time
 import datetime
-import cmd_utils
+from utils import cmd_utils
 import re
 import configparser
-from grading_scripts import student_list
+import zipfile
+from grading_scripts.student_list import STUDENT_LIST
 
 #Directory Error
 class DirectoryNotFound(OSError):
@@ -22,6 +23,78 @@ class DirectoryNotFound(OSError):
 #Student Error
 class StudentNotFound(LookupError):
     pass
+
+
+def zipdir(path, ziph):
+    """Zips a directory
+    
+
+    Taken from StackOverflow
+    """
+    # ziph is zipfile handle
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            ziph.write(os.path.join(root, file))
+
+def zip_students(assign_num, start_name, end_name, zip_name=None, progress=None):
+    zipf = None
+    if zip_name is None:
+        zipf = zipfile.ZipFile('asgt0%i-%s-%s.zip' %(assign_num, start_name, end_name), 'w', zipfile.ZIP_DEFLATED)
+    else:
+        zipf = zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED)
+
+
+    folder_name = "asgt0%i-ready" %assign_num
+
+    cur_progress = 0
+    total_progress = 0
+    
+    if progress is None:
+        cur_progress = 1
+        total_progress = len(STUDENT_LIST)
+    else:
+        cur_progress, total_progress = progress
+    for (name, email, section) in STUDENT_LIST:
+        cmd_utils.progress(cur_progress, total_progress, name)
+        if (name >= start_name) and (name <= end_name):
+            zipdir(os.path.join(folder_name, name), zipf)
+        cur_progress = cur_progress + 1
+
+    zipf.close()
+    return cur_progress
+
+
+def partition_assignment(assign_num, num_partitions):
+
+    print("Zipping Assignment %i" %(assign_num))
+    num_students = len(STUDENT_LIST)
+
+    num_students_partition = int(num_students/num_partitions)
+    num_extra = num_students % num_partitions
+
+
+
+    zip_dir = "asgt0%i-dist" %(assign_num)
+    if not os.path.exists(zip_dir):
+                os.makedirs(zip_dir)
+
+    cur_progress = 1
+    total_progress = num_partitions * num_students
+    current_idx = 0
+    for i in range(num_extra):
+        first_student= STUDENT_LIST[current_idx][0]
+        last_student = STUDENT_LIST[current_idx + num_students_partition][0]
+        cur_progress = zip_students(assign_num, 
+            first_student, last_student, 
+            os.path.join(zip_dir, "asgt0%i-%s-%s.zip" %(assign_num, first_student, last_student)), 
+            (cur_progress, total_progress))
+        current_idx = current_idx + num_students_partition + 1
+
+    for i in range(num_partitions - num_extra):
+        first_student= STUDENT_LIST[current_idx][0]
+        last_student = STUDENT_LIST[current_idx + num_students_partition -1 ][0]
+        cur_progress = zip_students(assign_num, first_student, last_student, os.path.join(zip_dir, "asgt0%i-%s-%s.zip" %(assign_num, first_student, last_student)), (cur_progress, total_progress))
+        current_idx = current_idx + num_students_partition
 
 
 def get_files(assign_num):
@@ -41,7 +114,7 @@ def check_assignment(assign_number):
     """
     return check_files(get_files(assign_number), "asgt0%i-ready" %(assign_number))
 
-def check_files(files, file_dir, student_list=student_list.STUDENT_LIST):
+def check_files(files, file_dir, student_list=STUDENT_LIST):
     """ Checks the files to see which ones have the necessary files
 
     files:          files to look for
@@ -54,9 +127,9 @@ def check_files(files, file_dir, student_list=student_list.STUDENT_LIST):
             files_missing = []
             for f in files:
                 if "%s-%s" %(os.path.basename(directory), f) in sub_files:
-                    files_present.append(f)
+                    files_present.append("%s-%s" %(os.path.basename(directory), f))
                 else:
-                    files_missing.append(f)
+                    files_missing.append("%s-%s" %(os.path.basename(directory), f))
             file_list.append((directory, {"present":files_present, "missing":files_missing}))
     return file_list
 
@@ -106,7 +179,7 @@ def anyCase(st) :
     return "".join(["[%s%s]" %(c.lower(), c.upper()) if c.isalpha() else c for c in st])
 
 
-def refresh_file(assign_num, student_name, student_list=student_list.STUDENT_LIST):
+def refresh_file(assign_num, student_name, student_list=STUDENT_LIST):
     """ Updates the files for a particular student
 
     assign_number:  which assignment
@@ -123,7 +196,7 @@ def refresh_file(assign_num, student_name, student_list=student_list.STUDENT_LIS
     return move_files(files, src_dir, tgt_dir, [student_name])
 
 
-def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student_list.STUDENT_LIST):
+def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT_LIST):
     """ Moves students' files from source to target dir
 
     files:          which files to move
@@ -208,18 +281,21 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
             os.makedirs(file_tgt_dir)
 
         #For each file copy it over
-        for (d, n, t) in file_list:
-            file_src_name = os.path.join(d,n)
-            file_tgt_name = os.path.join(file_tgt_dir, "%s-%s" %(student, n))
-            present_list.append(n)
-            #If the overwrite flag isn't True, check before copy
-            if not overwrite:
-                if not os.path.exists(file_tgt_name):
+        with open(os.path.join(file_tgt_dir, ".timestamps.txt"), 'w+') as f:
+            for (d, n, t) in file_list:
+                file_src_name = os.path.join(d,n)
+                file_tgt_name = os.path.join(file_tgt_dir, "%s-%s" %(student, n))
+                present_list.append(n)
+                f.write("%s,%s" %(n,t))
+                #If the overwrite flag isn't True, check before copy
+                if not overwrite:
+                    if not os.path.exists(file_tgt_name):
+                        shutil.copy(file_src_name, file_tgt_name)
+
+                else:
+                    os.remove(file_tgt_name)
                     shutil.copy(file_src_name, file_tgt_name)
 
-            else:
-                os.remove(file_tgt_name)
-                shutil.copy(file_src_name, file_tgt_name)
 
         #Get all the missing files
         for f in files:
@@ -232,7 +308,6 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=student
 
         #Format
         return_list.append((student, present_list, missing_list))
-    print("\nFinishing Up...")
 
     return return_list
 

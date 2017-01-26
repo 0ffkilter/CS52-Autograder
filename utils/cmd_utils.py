@@ -23,7 +23,7 @@ def progress(count, total, suffix=''):
     percents = round(100.0 * count / float(total), 1)
 
     if percents == 100.0:
-        bar = '=' * (filled_len - 1) + '>' + '-' * (bar_len - filled_len)
+        bar = '=' * (filled_len) + '-' * (bar_len - filled_len)
 
         sys.stdout.write('\x1b[4;32;40m' + '[%s] %s%s ...%s\r\x1b[0m' % (bar, percents, '%', "Done!".ljust(20)))
         sys.stdout.flush()

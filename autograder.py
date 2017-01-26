@@ -1,12 +1,12 @@
 import argparse
 import os
-import cmd_utils
-import file_utils
 import configparser
-import grading_utils
+from utils import file_utils, cmd_utils, grading_utils
 import multiprocessing
+import datetime
 from argparse import RawTextHelpFormatter
 from grading_scripts.student_list import STUDENT_LIST
+
 
 def print_student(assign_num, student, files=None):
     """Prints a student's files - grabs from from config if no files are
@@ -54,11 +54,11 @@ def check_files(assign_num, verbose=True):
     present_files = file_utils.get_files_present(result)
 
     if verbose is True:
-        print("Present Files:\n")
+        print("Present Files:")
         for i in present_files:
             print("\t" + i)
 
-        print("Missing Files:\n")
+        print("Missing Files:")
         for i in missing_files:
             print("\t" + i)
 
@@ -100,6 +100,20 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
 
   
     file_list = file_utils.move_files(submit_files, "asgt0%i-submissions" %(assign_num), "asgt0%i-ready" %(assign_num), stdt_list=students)
+
+    with open(os.path.join("asgt0%i-ready" %(assign_num), "files.txt"), 'w+') as f:
+        for (name, present_list, missing_list) in file_list:
+            f.write(name + "\n")
+            if len(present_list) > 0:
+                f.write("\tPresent:\n")
+                for p in present_list:
+                    f.write("\t\t%s\n" %(p))
+
+            if len(missing_list) > 0:
+                f.write("\tMissing:\n")
+                for m in missing_list:
+                    f.write("\t\t%s\n" %(m))
+            f.write("\n")
 
     #Get the list of problems from the config file and get the appropriate information
     problem_config = []
@@ -162,7 +176,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
 
     # now for each student
 
-    print("Generating Subfiles")
+    print("\nGenerating Subfiles")
     cur_progress = 1
     total_progress = len(students)
     for (student, email, section) in students:
@@ -175,7 +189,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
                 "asgt0%i-ready" % (assign_num), student, "%s-%s" %(student, submit_files[0]))
         student_code = ""
         with open(student_file, 'r') as s_file:
-            student_code = s_file.read()
+            student_code = s_file.read().replace("\t", "    ")
 
         for (name, pre_string, problems, post_string) in problem_strings:
             # Generate a flag to partition the file
@@ -214,6 +228,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
 
     return grading_file_list
 
+
 def gather_files_student(assign_num, overwrite=False, student_name=""):
     """Gather the files of a particular student
 
@@ -228,24 +243,64 @@ def gather_files_student(assign_num, overwrite=False, student_name=""):
             to_grade.append((name, email, section))
     return gather_files(assign_num, overwrite, to_grade)
 
+
 def grade_student(assign_num, student, student_file, config, problems, grading_file_list, cur_progress, total_points):
 
+    #Parse the Information out of the studnet name
     (name, email, section) = student
 
 
-    output_string = ""
+    #Generate the timestamps of the files submitted
+    timestamps = ""
+    with open(os.path.join("asgt0%i-ready" %(assign_num), name, ".timestamps.txt"), 'r') as t:
+        timestamps = t.read()
+
+    timestamp_list = timestamps.split("\n")
+    timestamps = []
+    for t in timestamp_list:
+        l = t.split(",")
+        timestamps.append((l[0],l[1]))
+
+    #Adjust the timezone and format the string
+    timestamp_string = ""
+    for (f, t) in timestamps:
+        time = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S")
+        time = time - datetime.timedelta(hours=8)
+        timestamp_string = timestamp_string + ("  %s" %(f)).ljust(19) + "%s\n" %(time.strftime("%b %d, %H:%M:%S")) 
+ 
+    #Base for the output string
+    output_string = """
+Name:              %s
+Email:             %s
+Section:           %s  
+Submission Date:   
+%sAssignment Num:    %i\n\n
+""" %(name,
+    email,
+    section,
+    timestamp_string,
+    assign_num
+    )
+
     summary_list = []
     num_not_compiled = 0
 
+    #Run each of the files in student_name/grading
     for p, f in zip(problems, grading_file_list):
+
+        #Adjust progress bar
         cur_progress = cur_progress + 1
         cmd_utils.progress(cur_progress, total_points, "%s : %s" %(name, p))
+
+        #Get the path offile we're going to run and run it
         cur_path = os.path.join("asgt0%i-ready" %(assign_num), name, "grading", f)
         output = cmd_utils.run_file(cur_path)
 
+        #Parse the output
         problem_string = "Problem %s:\n" %(p)
         idx = output.find("(*BEGIN*)")
 
+        #Count the results based onw hat we expect
         num_passed = 0
         num_failed = 0
         if idx == -1:
@@ -253,31 +308,39 @@ def grade_student(assign_num, student, student_file, config, problems, grading_f
             num_not_compiled = num_not_compiled + 1
         else:
             parsed_output = output[idx + 9:]
+            if parsed_output[-3] == '-':
+                parsed_output = parsed_output[:-3] + "\n"
             problem_string = problem_string + parsed_output + "\n"
             num_passed = parsed_output.count("PASS")
             num_failed = parsed_output.count("FAIL")
+
+        #Tests that didn't pass
         num_halted = int(config[p]["Tests"]) - num_passed - num_failed
 
-
+        #Get the number of points in this problem
         num_points = float(config[p]["Points"])
 
-        points_given = 0
-
+        #Deduct points
         deduction = (num_halted + num_failed) * 0.5
         if num_passed == 0:
             deduction = num_points
         else:
             deduction = min(num_points-0.5, deduction)
 
+        #Append to thel ist of deductions
         summary_list.append((p, deduction))
         output_string = output_string + problem_string
 
 
+    #Format the summary and rest of it
     output_string = output_string + "\n\n=====Summary:=====\n\n"
 
-    output_string = output_string + ("Deductions:\nProblem | Points Taken\n" +
-                    "\n".join([p.ljust(7) + "|" + str(d).rjust(10) for (p,d) in summary_list]))
 
+    #Print the deductions
+    output_string = output_string + ("Deductions:\nProblem | Points Taken\n" +
+                    "\n".join([p.ljust(8) + "|" + str(d).rjust(10) for (p,d) in summary_list]))
+
+    #Format check the assignment
     (too_long, contains_tab, comments, linecount) = grading_utils.format_check(student_file)
 
     output_string = output_string + "\nStyle:\n"
@@ -290,17 +353,18 @@ def grade_student(assign_num, student, student_file, config, problems, grading_f
     if too_long > 20:
         style_points = style_points - 0.5
 
-    if contains_tab > 0:
-        style_points = style_points - 0.5
+    #I don't care about tabs
+    #if contains_tab > 0:
+        #style_points = style_points - 0.5
 
-
+    #Style summary
     output_string = output_string + "Characters:  %i\n" %(too_long)
     output_string = output_string + "Num Tabs  :  %i\n" %(contains_tab)
     output_string = output_string + "Comments  :  %i\n" %(comments)
 
     output_string = output_string + "\nTotals:\n"
 
-
+    #Rest of it
     total_points = int(config["Assignment"]["TotalPoints"])
 
     total_deduction = sum([b for (a,b) in summary_list])
@@ -318,10 +382,11 @@ def grade_student(assign_num, student, student_file, config, problems, grading_f
     return cur_progress
 
 
-def grade_assignment(assign_num, overwrite, students=STUDENT_LIST):
+def grade_assignment(assign_num, overwrite, num_partitions=-1, students=STUDENT_LIST):
     problems = gather_files(assign_num, overwrite, students)
     grading_file_list = ["asgt0%i_%s.sml" %(assign_num, n) for n in problems]
 
+    #Parse the config file
     config = configparser.ConfigParser()
 
     config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
@@ -356,7 +421,10 @@ def grade_assignment(assign_num, overwrite, students=STUDENT_LIST):
                         grading_file_list,
                         cur_num, total_files)
 
+
     print("\n")
+    if num_partitions is not -1:
+        file_utils.partition_assignment(assign_num, num_partitions)
 
 def grade_assignment_student(assign_num, overwrite=False, student_name=""):
     """grade assignments of students matching student_name
@@ -401,6 +469,10 @@ def main():
     [optional] force refresh the files, overwriting any changes made to local files.
     """)
 
+    parser.add_argument('--zip', action='store', dest='num_partitions', default=-1, type=int, help="""
+    [optional] zip the assignment for distribution - only works with --grade as well
+    """)
+
     res = parser.parse_args()
 
     if res.gather is not -1:
@@ -421,13 +493,14 @@ def main():
         if res.student is not None:
             grade_assignment_student(res.grade, res.overwrite, res.student)
         else:
-            grade_assignment(res.grade, res.overwrite)
+            grade_assignment(res.grade, res.overwrite, res.num_partitions)
 
     if res.print is not -1:
         if res.student is not None:
             print_files_student(res.gather, res.student)
         else:
             print_files(res.gather)
+
 
 
 

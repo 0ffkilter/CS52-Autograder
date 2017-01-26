@@ -107,6 +107,12 @@ python generate_pregrade.py
 Generates a pregrade.sml containing all flags and code from the files.  Set ```compact=False``` in the file to preserve original spacing and tabs. 
 
 
+### Checkout Files
+```
+python checkout_files.py <assign_num> <start_student> <end_student>
+```
+
+Zips the students from start->end (inclusive on both ends) into a zip in the current directory
 
 
 
