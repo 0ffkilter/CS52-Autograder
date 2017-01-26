@@ -457,7 +457,7 @@ def main():
     Check integrity of files, or refresh student files.
     """)
 
-    parser.add_argument('--print', action='store', dest='print', default=-1, type=int, help="""
+    parser.add_argument('--print', action='store', dest='print_var', default=-1, type=int, help="""
     Print assignment, or student's files.
     """)
 
@@ -495,7 +495,7 @@ def main():
         else:
             grade_assignment(res.grade, res.overwrite, res.num_partitions)
 
-    if res.print is not -1:
+    if res.print_var is not -1:
         if res.student is not None:
             print_files_student(res.gather, res.student)
         else:
