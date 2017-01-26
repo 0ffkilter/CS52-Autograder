@@ -95,7 +95,7 @@ python generate_assignment.py <assign_num> file1 file2 file3...
 ```
 Generates a fake assignment in ```asgt0<assign_num>-submissions```, copying each ```file1 file2...``` into each students directory.
 
-* Does not rename files
+* Removes '-solution' from filenames, but will not otherwise edit file names
 
 
 ### pregrade_files/Generate Pregrade
