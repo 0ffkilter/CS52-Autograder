@@ -269,7 +269,6 @@ def grade_student(assign_num, student, student_file, config, problems, grading_f
     timestamp_string = ""
     for (f, t) in timestamps:
         time = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S")
-        time = time - datetime.timedelta(hours=8)
         timestamp_string = timestamp_string + ("  %s" %(f)).ljust(19) + "%s\n" %(time.strftime("%b %d, %H:%M:%S")) 
  
     #Base for the output string
