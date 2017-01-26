@@ -115,7 +115,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
     #[(pre_string, post_string)]
 
     pregrade_string = ""
-    with open("pregrade.sml", 'r') as pregrade:
+    with open(os.path.join("pregrade_files", "pregrade.sml"), 'r') as pregrade:
         pregrade_string = pregrade.read()
 
     for name, problem in problem_config:
@@ -134,7 +134,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
                     with open(r, "r") as f:
                         pre_string = pre_string + f.read() + "\n"
                 else:
-                    pre_string = pre_string + split_string(pregrade_string, r)
+                    pre_string = pre_string + grading_utils.split_string(pregrade_string, r)
 
         problems.append(name)
         # Read from the script file
@@ -198,7 +198,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
 
                 g_file.write(content_string + pre_string)
 
-                g_file.write("\nval _ = print(\"(*BEGIN*)\\n\");\n")
+                g_file.write("\n\nval _ = print(\"(*BEGIN*)\\n\");\n")
 
                 g_file.write(post_string)
 
@@ -241,7 +241,7 @@ def grade_student(assign_num, student, student_file, config, problems, grading_f
         num_passed = 0
         num_failed = 0
         if idx == -1:
-            problem_string = problem_string + "Failed to Compile %s\n"
+            problem_string = problem_string + "Failed to Compile\n\tCheck %s for errors\n\n" %(cur_path)
             num_not_compiled = num_not_compiled + 1
         else:
             parsed_output = output[idx + 9:]

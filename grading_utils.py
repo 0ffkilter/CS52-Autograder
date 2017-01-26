@@ -30,9 +30,9 @@ def get_requirements(requirements, assign_num):
             cur_req = "-%s-" %(cur_req)
         else:
             req_parts = req.split("_")
-            if req_parts[2] is "exact":
+            if req_parts[-1] == "exact":
                 return_list.append("list_compare_exact")
-            elif req_parts[2] is "list":
+            elif req_parts[-1] == "list":
                 return_list.append("list_compare")
             return_list.append(req)
     return return_list
@@ -48,6 +48,8 @@ def split_string(string, flag):
     """
 
     # \w is an abbreviation for A-Za-z0-9_
+
+    string = string.replace("\t", "    ")
     regex = re.compile('[$][+-][\w.\-\*]*')
 
     selectedFlags = set([flag])
