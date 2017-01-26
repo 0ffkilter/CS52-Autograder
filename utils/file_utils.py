@@ -230,8 +230,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
         possibleFiles = glob.glob(os.path.join(source_dir, "*" + anyCase(email) + "*"))
         if len(possibleFiles) == 0:
             return_list.append((student, [], files))
-            print("\tNo Submission")
-
+            
         file_list = []
 
         #possible matches
