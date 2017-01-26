@@ -114,6 +114,13 @@ python checkout_files.py <assign_num> <start_student> <end_student>
 
 Zips the students from start->end (inclusive on both ends) into a zip in the current directory
 
+### Partition Assignment
+```
+python zip_assignment.py <assign_num> <num_partitions>
+```
+
+Zips the assignment into `<num_partitions>` sections in `asgt0N-dist` where `N` is `assign_num`
+
 
 
 
