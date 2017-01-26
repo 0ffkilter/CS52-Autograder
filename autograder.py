@@ -218,8 +218,9 @@ def gather_files_student(assign_num, overwrite=False, student_name=""):
     student_name        name to match for gathering
     """
     to_grade = []
+    pattern = re.compile(student_name)
     for (name, email, section) in student_list.STUDENT_LIST:
-        if student_name in name or student_name in email:
+        if pattern.match(name).group(0) != '' or pattern.match(email).group(0):
             to_grade.append((name, email, section))
     return gather_files(assign_num, overwrite, to_grade)
 
