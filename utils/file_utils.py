@@ -142,7 +142,7 @@ def get_files_missing(file_list):
     return_list = []
     for (directory, files) in file_list:
         for f in files["missing"]:
-            return_list.append(os.path.join(directory, f))
+            return_list.append(f)
     return return_list
 
 
@@ -154,7 +154,7 @@ def get_files_present(file_list):
     return_list = []
     for (directory, files) in file_list:
         for f in files["present"]:
-            return_list.append(os.path.join(directory, f))
+            return_list.append(f)
     return return_list
 
 """
