@@ -86,7 +86,7 @@ When used, any files copied or created will forcibly overwrite the files in the 
 --overwrite
 ```
 
-## Tools
+## Additional Tools
 
 ### Generate Assignment
 
@@ -97,6 +97,14 @@ Generates a fake assignment in ```asgt0<assign_num>-submissions```, copying each
 
 * Does not rename files
 
+
+### pregrade_files/Generate Pregrade
+
+```
+python generate_pregrade.py
+```
+
+Generates a pregrade.sml containing all flags and code from the files.  Set ```compact=False``` in the file to preserve original spacing and tabs. 
 
 
 

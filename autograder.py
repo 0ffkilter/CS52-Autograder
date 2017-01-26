@@ -88,7 +88,11 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
 
     config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
     num_points = config["Assignment"]["TotalPoints"]
-    style_points = config["Assignment"]["StylePoints"]
+    
+    style_points = 2
+    if "StylePoints" in config["Assignment"]:
+        style_points = config["Assignment"]["StylePoints"]  
+    
     num_problems = int(config["Assignment"]["NumProblems"])
     submit_files = config["Assignment"]["Files"].split(",")
 
