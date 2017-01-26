@@ -85,6 +85,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
      # Load the config file
     config = configparser.ConfigParser()
 
+
     config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
     num_points = config["Assignment"]["TotalPoints"]
     style_points = config["Assignment"]["StylePoints"]
@@ -92,7 +93,9 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
     submit_files = config["Assignment"]["Files"].split(",")
 
     #Gather the files
-    file_list = file_utils.move_files(submit_files, "asgt0%i-submissions" %(assign_num), "asgt0%i-ready" %(assign_num))
+
+  
+    file_list = file_utils.move_files(submit_files, "asgt0%i-submissions" %(assign_num), "asgt0%i-ready" %(assign_num), stdt_list=students)
 
     #Get the list of problems from the config file and get the appropriate information
     problem_config = []
@@ -215,8 +218,9 @@ def gather_files_student(assign_num, overwrite=False, student_name=""):
     student_name        name to match for gathering
     """
     to_grade = []
+    pattern = re.compile(student_name)
     for (name, email, section) in student_list.STUDENT_LIST:
-        if student_name in name or student_name in email:
+        if pattern.match(name).group(0) != '' or pattern.match(email).group(0):
             to_grade.append((name, email, section))
     return gather_files(assign_num, overwrite, to_grade)
 
@@ -359,7 +363,7 @@ def grade_assignment_student(assign_num, overwrite=False, student_name=""):
     """
 
     to_grade = []
-    for (name, email, section) in student_list.STUDENT_LIST:
+    for (name, email, section) in STUDENT_LIST:
         if student_name in name or student_name in email:
             to_grade.append((name, email, section))
     grade_assignment(assign_num, overwrite, to_grade)
