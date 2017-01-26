@@ -29,9 +29,12 @@ def get_requirements(requirements, assign_num):
             cur_req = req.split("/")[-1]
             cur_req = "-%s-" %(cur_req)
         else:
-            cur_path = os.path.join("pregrade_files", req + ".sml")
-            if os.path.exists(cur_path):
-                return_list.append(cur_path)
+            req_parts = req.split("_")
+            if req_parts[2] is "exact":
+                return_list.append("list_compare_exact")
+            elif req_parts[2] is "list":
+                return_list.append("list_compare")
+            return_list.append(req)
     return return_list
 
 
