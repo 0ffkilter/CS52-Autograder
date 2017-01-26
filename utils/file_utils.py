@@ -230,44 +230,46 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
         possibleFiles = glob.glob(os.path.join(source_dir, "*" + anyCase(email) + "*"))
         if len(possibleFiles) == 0:
             return_list.append((student, [], files))
-            
+
         file_list = []
 
         #possible matches
         for result in possibleFiles:
 
+
             if "2016" in result or "2017" in result:
-                #strip the time
-                time = datetime.datetime.strptime(result, os.path.join(source_dir, "%Y-%m-%dT%H+%M+%S+%f" + result[result.find("Z"):]))
+                if not 'latest' in result and not 'ontime' in result:
+                    #strip the time
+                    time = datetime.datetime.strptime(result, os.path.join(source_dir, "%Y-%m-%dT%H+%M+%S+%f" + result[result.find("Z"):]))
 
-                #Now, for each of the files in there
-                for (dirpath, dirnames, filenames) in os.walk(result):
-                    for f in filenames:
-                        #if it's one of the files we're looking for
-                        if f in files:
+                    #Now, for each of the files in there
+                    for (dirpath, dirnames, filenames) in os.walk(result):
+                        for f in filenames:
+                            #if it's one of the files we're looking for
+                            if f in files:
 
-                            #get the student id
-                            student_id = dirpath.split("-")[-1]
-                            new_file_list = []
-                            found = False
-                            #for each of the files we've found for for this student
-                            for (cur_path, file_name, timestamp) in file_list:
-                                #if it matches the name
-                                if file_name == f:
-                                    #if the new one is older keep the previous one
-                                    if time > timestamp:
-                                        new_file_list.append((cur_path, file_name,timestamp))
+                                #get the student id
+                                student_id = dirpath.split("-")[-1]
+                                new_file_list = []
+                                found = False
+                                #for each of the files we've found for for this student
+                                for (cur_path, file_name, timestamp) in file_list:
+                                    #if it matches the name
+                                    if file_name == f:
+                                        #if the new one is older keep the previous one
+                                        if time > timestamp:
+                                            new_file_list.append((cur_path, file_name,timestamp))
+                                        else:
+                                            #keep the one we just found
+                                            new_file_list.append((dirpath, f, time))
+                                        found = True
+                                        #if it doesn't match, keep the old no matter what
                                     else:
-                                        #keep the one we just found
-                                        new_file_list.append((dirpath, f, time))
-                                    found = True
-                                    #if it doesn't match, keep the old no matter what
-                                else:
-                                    new_file_list.append((cur_path, file_name, timestamp))
-                            if not found:
-                                new_file_list.append((dirpath, f, time))
+                                        new_file_list.append((cur_path, file_name, timestamp))
+                                if not found:
+                                    new_file_list.append((dirpath, f, time))
 
-                            file_list = new_file_list
+                                file_list = new_file_list
 
 
         present_list = []

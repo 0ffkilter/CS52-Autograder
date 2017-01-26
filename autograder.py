@@ -188,40 +188,44 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
         student_file = os.path.join(
                 "asgt0%i-ready" % (assign_num), student, "%s-%s" %(student, submit_files[0]))
         student_code = ""
-        with open(student_file, 'r') as s_file:
-            student_code = s_file.read().replace("\t", "    ")
+        try:
+            with open(student_file, 'r') as s_file:
+                student_code = s_file.read().replace("\t", "    ")
 
-        for (name, pre_string, problems, post_string) in problem_strings:
-            # Generate a flag to partition the file
-            flag = ""
-            for p in problems:
-                if len(p) > 1:
-                    if p[-1].isalpha():
-                        if int(p[:-1]) < 10:
-                            flag = flag + "0%i_0%s" % (assign_num, p)
+            for (name, pre_string, problems, post_string) in problem_strings:
+                # Generate a flag to partition the file
+                flag = ""
+                for p in problems:
+                    if len(p) > 1:
+                        if p[-1].isalpha():
+                            if int(p[:-1]) < 10:
+                                flag = flag + "0%i_0%s" % (assign_num, p)
+                            else:
+                                flag = flag + "0%i_%s" % (assign_num, p)
                         else:
                             flag = flag + "0%i_%s" % (assign_num, p)
                     else:
-                        flag = flag + "0%i_%s" % (assign_num, p)
-                else:
-                    if int(p) < 10:
-                        flag = flag + "0%i_0%s" % (assign_num, p)
-                    else:
-                        flag = flag + "0%i_%s" % (assign_num, p)
+                        if int(p) < 10:
+                            flag = flag + "0%i_0%s" % (assign_num, p)
+                        else:
+                            flag = flag + "0%i_%s" % (assign_num, p)
 
-            # Partition the student's file
-            content_string = grading_utils.split_string(student_code, flag)
+                # Partition the student's file
+                content_string = grading_utils.split_string(student_code, flag)
 
-            # Write to a grading file
-            if not os.path.exists(os.path.join("asgt0%i-ready" % (assign_num), student, "grading")):
-                os.makedirs(os.path.join("asgt0%i-ready" % (assign_num), student, "grading"))
-            with open(os.path.join("asgt0%i-ready" % (assign_num), student, "grading", "asgt0%i_%s.sml" % (assign_num, name)), "w+") as g_file:
+                # Write to a grading file
+                if not os.path.exists(os.path.join("asgt0%i-ready" % (assign_num), student, "grading")):
+                    os.makedirs(os.path.join("asgt0%i-ready" % (assign_num), student, "grading"))
+                with open(os.path.join("asgt0%i-ready" % (assign_num), student, "grading", "asgt0%i_%s.sml" % (assign_num, name)), "w+") as g_file:
 
-                g_file.write(content_string + pre_string)
+                    g_file.write(content_string + pre_string)
 
-                g_file.write("\n\nval _ = print(\"(*BEGIN*)\\n\");\n")
+                    g_file.write("\n\nval _ = print(\"(*BEGIN*)\\n\");\n")
 
-                g_file.write(post_string)
+                    g_file.write(post_string)
+        except:
+            #File not found
+            pass
 
         cur_progress = cur_progress + 1
     print()

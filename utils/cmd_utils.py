@@ -76,6 +76,9 @@ def run_file(read_file, timeout=5, delete=False):
     timeout:        timeout of command
     delete:         do we delete the file afterwards
     """
+    if not os.path.exists(read_file):
+        return "File Not Found"
+
     prefix = "cat"
     if platform().find("Windows") != -1:
         prefix = "type"  #Windows Compatability!
