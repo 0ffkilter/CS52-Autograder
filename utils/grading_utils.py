@@ -28,6 +28,7 @@ def get_requirements(requirements, assign_num):
         elif "$ASSIGN$" in req:
             cur_req = req.split("/")[-1]
             cur_req = "-%s-" %(cur_req)
+            return_list.append(cur_req)
         else:
             req_parts = req.split("_")
             if req_parts[-1] == "exact":
