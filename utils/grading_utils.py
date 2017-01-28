@@ -101,15 +101,15 @@ def format_check(f_name):
     contains_tab = 0
     comments = 0
     linecount = 0
+    if os.path.exists(f_name):
+        file = open(f_name, 'r')
 
-    file = open(f_name, 'r')
-
-    for line in file:
-        linecount = linecount + 1
-        comments += min(line.count("(*") + line.count("*)"), 1)
-        if 80 < len(line):
-            too_long += len(line) - 80
-        if 0 <= line.find("\t"):
-            contains_tab += 1
+        for line in file:
+            linecount = linecount + 1
+            comments += min(line.count("(*") + line.count("*)"), 1)
+            if 80 < len(line):
+                too_long += len(line) - 80
+            if 0 <= line.find("\t"):
+                contains_tab += 1
 
     return (too_long, contains_tab, comments, linecount)
