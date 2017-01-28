@@ -90,7 +90,7 @@ def run_file(read_file, timeout=5, delete=False):
     with Popen(cmd, shell=True, stdout=PIPE, preexec_fn=os.setsid) as process:
         try:
             output = process.communicate(timeout=timeout)[0]
-            #output = output.decode('ascii')
+            output = output.decode('ascii')
         except TimeoutExpired:
             os.killpg(process.pid, signal.SIGINT) # send signal to the process group
             output = process.communicate()[0]
