@@ -194,24 +194,24 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
 
             for (name, pre_string, problems, post_string) in problem_strings:
                 # Generate a flag to partition the file
-                flag = ""
+                flags = []
                 for p in problems:
                     if len(p) > 1:
                         if p[-1].isalpha():
                             if int(p[:-1]) < 10:
-                                flag = flag + "0%i_0%s" % (assign_num, p)
+                                flags.append("0%i_0%s " % (assign_num, p))
                             else:
-                                flag = flag + "0%i_%s" % (assign_num, p)
+                                flags.append("0%i_%s " % (assign_num, p))
                         else:
-                            flag = flag + "0%i_%s" % (assign_num, p)
+                            flags.append("0%i_%s " % (assign_num, p))
                     else:
                         if int(p) < 10:
-                            flag = flag + "0%i_0%s" % (assign_num, p)
+                            flags.append("0%i_0%s " % (assign_num, p))
                         else:
-                            flag = flag + "0%i_%s" % (assign_num, p)
+                            flags.append("0%i_%s " % (assign_num, p))
 
                 # Partition the student's file
-                content_string = grading_utils.split_string(student_code, flag)
+                content_string = "\n".join([grading_utils.split_string(student_code, flag.strip()) for flag in flags])
 
                 # Write to a grading file
                 if not os.path.exists(os.path.join("asgt0%i-ready" % (assign_num), student, "grading")):
