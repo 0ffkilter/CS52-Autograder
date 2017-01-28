@@ -95,6 +95,8 @@ def run_file(read_file, timeout=5, delete=False):
         except TimeoutExpired:
             os.killpg(process.pid, signal.SIGINT) # send signal to the process group
             output = process.communicate()[0]
+            output = output.decode('ascii')
+
 
     if delete:
         os.remove(read_file)    
