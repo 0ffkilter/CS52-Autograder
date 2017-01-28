@@ -7,6 +7,7 @@ January, 2017
 
 import os
 import sys
+import signal
 from subprocess import PIPE, TimeoutExpired, Popen
 from platform import platform
 from time import monotonic as timer
