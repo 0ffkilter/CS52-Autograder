@@ -260,10 +260,12 @@ def grade_student(assign_num, student, student_file, config, problems, grading_f
         timestamps = t.read()
 
     timestamp_list = timestamps.split("\n")
-    timestamps = []
-    for t in timestamp_list:
-        l = t.split(",")
-        timestamps.append((l[0],l[1]))
+    if ',' in timestamps:
+        timestamps = []
+
+        for t in timestamp_list:
+            l = t.split(",")
+            timestamps.append((l[0],l[1]))
 
     #Adjust the timezone and format the string
     timestamp_string = ""
