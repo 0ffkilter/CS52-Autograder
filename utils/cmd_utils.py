@@ -7,8 +7,9 @@ January, 2017
 
 import os
 import sys
-from subprocess import PIPE, check_output
+from subprocess import PIPE, check_output, TimeoutExpired
 from platform import platform
+from time import monotonic as timer
 
 def progress(count, total, suffix=''):
     """
@@ -85,10 +86,16 @@ def run_file(read_file, timeout=5, delete=False):
 
     cmd = "%s %s | sml" %(prefix, read_file)
 
-    output = check_output(cmd, shell=True, timeout=timeout)
-    output = output.decode('ascii')
+    start = timer()
+    with Popen(cmd, shell=True, stdout=PIPE, preexec_fn=os.setsid) as process:
+        try:
+            output = process.communicate(timeout=timeout)[0]
+            #output = output.decode('ascii')
+        except TimeoutExpired:
+            os.killpg(process.pid, signal.SIGINT) # send signal to the process group
+            output = process.communicate()[0]
 
     if delete:
-        os.remove(read_file)
+        os.remove(read_file)    
 
     return output
