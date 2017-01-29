@@ -74,31 +74,27 @@ def check_files_student(assign_num, student_name):
         assign_num), os.path.join("asgt0%i-ready" % (assign_num), student_name))
 
 
+
+
 def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
     """Gathers the files for the appropriate assignment and copies them to
-    $assign_num$-ready and generates the sml grading subfiles for each student
+    $assign_num$-ready
 
     assign_num:         assignment number
     overwrite:          do you overwrite the files already in there?
     students:           which students to use (default all)
     """
      # Load the config file
+
+
     config = configparser.ConfigParser()
 
 
     config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
-    num_points = config["Assignment"]["TotalPoints"]
-    
-    style_points = 2
-    if "StylePoints" in config["Assignment"]:
-        style_points = config["Assignment"]["StylePoints"]  
-    
-    num_problems = int(config["Assignment"]["NumProblems"])
+
     submit_files = config["Assignment"]["Files"].split(",")
 
-    #Gather the files
 
-  
     file_list = file_utils.move_files(submit_files, "asgt0%i-submissions" %(assign_num), "asgt0%i-ready" %(assign_num), stdt_list=students)
 
     with open(os.path.join("asgt0%i-ready" %(assign_num), "files.txt"), 'w+') as f:
@@ -114,6 +110,29 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
                 for m in missing_list:
                     f.write("\t\t%s\n" %(m))
             f.write("\n")
+
+
+
+
+def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
+
+  
+    config = configparser.ConfigParser()
+
+
+    config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
+    num_points = config["Assignment"]["TotalPoints"]
+    
+    style_points = 2
+    if "StylePoints" in config["Assignment"]:
+        style_points = config["Assignment"]["StylePoints"]  
+    
+    num_problems = int(config["Assignment"]["NumProblems"])
+    submit_files = config["Assignment"]["Files"].split(",")
+
+    #Gather the files
+
+
 
     #Get the list of problems from the config file and get the appropriate information
     problem_config = []
@@ -232,6 +251,14 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
 
     return grading_file_list
 
+
+def generate_subfiles_student(assign_num, student, overwrite=False):
+    to_grade = []
+    pattern = re.compile(student_name)
+    for (name, email, section) in student_list.STUDENT_LIST:
+        if pattern.match(name).group(0) != '' or pattern.match(email).group(0):
+            to_grade.append((name, email, section))
+    return generate_subfiles(assign_num, overwrite, to_grade)
 
 def gather_files_student(assign_num, overwrite=False, student_name=""):
     """Gather the files of a particular student
@@ -393,7 +420,8 @@ Submission Date:
 
 
 def grade_assignment(assign_num, overwrite, num_partitions=-1, students=STUDENT_LIST):
-    problems = gather_files(assign_num, overwrite, students)
+    gather_files(assign_num, overwrite, students)
+    problems = generate_subfiles(assign_num, overwrite, students)
     grading_file_list = ["asgt0%i_%s.sml" %(assign_num, n) for n in problems]
 
     #Parse the config file
@@ -475,6 +503,10 @@ def main():
     [optional] which student to select
     """)
 
+    parser.add_argument('--generate', action='store', dest='generate', default=-1, type=int, help="""
+    Regenerate subfiles for grading
+    """)
+
     parser.add_argument('-overwrite', action='store_true', dest='overwrite', help="""
     [optional] force refresh the files, overwriting any changes made to local files.
     """)
@@ -498,6 +530,11 @@ def main():
         else:
             check_files(res.check)
 
+    if res.generate is not -1:
+        if res.student is not None:
+            generate_subfiles_student(res.generate, res.student)
+        else:
+            generate_subfiles(res.generate)
 
     if res.grade is not -1:
         if res.student is not None:
