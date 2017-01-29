@@ -248,10 +248,12 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
                         for f in filenames:
                             #if it's one of the files we're looking for
                             if f in files:
+                                
                                 content = ""
                                 with open(os.path.join(dirpath, f), 'r') as f_temp:
                                     content = f_temp.read()
-                                if (student in content[:100]) or student[:-1] in content[:100]:
+                                if  dirpath.count("-") == 4 or (student in content[:100]) or student[:-1] in content[:100]:
+                                    
                                     idx = dirpath.find("Z-") + 2
                                     student_id = dirpath[idx:].split("-")[0]
                                     #get the student id
@@ -275,7 +277,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
                                         new_file_list.append((dirpath, f, time))
 
                                     file_list = new_file_list
-
+                                
 
         present_list = []
         missing_list = []
