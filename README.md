@@ -49,7 +49,7 @@ Gathers all files and generates SML subfiles but does not grade
 python autograder.py --gather <assign_num>
 ```
 
-Gathers files and grades any student with a regex match on <student_name> in either their name or email
+Gathers files any student with a regex match on <student_name> in either their name or email
 ```
 python autograder.py --gather <assign_num> --student <student_name>
 ```
@@ -65,6 +65,19 @@ Checks the files of a particular student
 ```
 python autograder.py --check <assign_num> --student <student_name>
 ```
+
+### Generate
+
+Generates the sml subfies for each student for the assignment
+```
+python autograder.py --generate <assign_num>
+```
+
+Generates the students files and does a regex match on <student_name> in either their name or email
+```
+python autograder.py --generate <assign_num> --student <student_name>
+```
+
 
 ### Print
 
@@ -120,6 +133,28 @@ python zip_assignment.py <assign_num> <num_partitions>
 ```
 
 Zips the assignment into `<num_partitions>` sections in `asgt0N-dist` where `N` is `assign_num`
+
+
+
+## Grading
+
+In `asgt0N-ready`:
+
+ * student_name/
+   * grading/
+   	 * [asgt0N_n.sml  for n in problems]
+   * .timestamps.txt 
+   * student_name-asgt0N.sml (or other files)
+   * grades.txt
+
+
+grading/ contains the sml subfiles used to grade the student
+
+.timestamps.txt contains the timestamps of each of the files submitted
+
+grades.txt contains the summary and test results of the autograder.  This is the file that gets emailed out.
+
+student_name-asgt0N.sml contains the original file that the student submitted.  
 
 
 
