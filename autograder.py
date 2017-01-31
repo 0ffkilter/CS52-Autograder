@@ -5,7 +5,7 @@ from utils import file_utils, cmd_utils, grading_utils
 import multiprocessing
 import datetime
 from argparse import RawTextHelpFormatter
-from grading_scripts.student_list import STUDENT_LIST
+from ...grading_scripts.student_list import STUDENT_LIST
 
 
 def print_student(assign_num, student, files=None):
@@ -139,6 +139,14 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
     with open(os.path.join("pregrade_files", "pregrade.sml"), 'r') as pregrade:
         pregrade_string = pregrade.read()
 
+    # (name (number), flag, pregrade_code (not problems), test_script)
+
+    # problem 1...
+    # problem n...
+    # (==grader code==)
+    # pregrade code
+    # scripts
+    problem_list = []
     for name, problem in problem_config:
         req_list = grading_utils.get_requirements(problem["requirements"], assign_num)
 
@@ -146,18 +154,14 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
         pre_string = "\n\n(*=====================Grader Code=====================*)\n"
 
         # Read from each of the req files
-        problems = []
         for r in req_list:
-            if r.startswith('-') and r.endswith('-'):
-                problems.append(r[1:-1])
+            if os.path.exists(r):
+                with open(r, "r") as f:
+                    pre_string = pre_string + f.read() + "\n"
             else:
-                if os.path.exists(r):
-                    with open(r, "r") as f:
-                        pre_string = pre_string + f.read() + "\n"
-                else:
-                    pre_string = pre_string + grading_utils.split_string(pregrade_string, r)
+                pre_string = pre_string + grading_utils.split_string(pregrade_string, r)
 
-        problems.append(name)
+
         # Read from the script file
         post_string = ""
 
@@ -171,7 +175,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
             post_string = f_grade.read()
 
         # Put into a list
-        problem_strings.append((name, pre_string, problems, post_string))
+        problem_list.append(name, grading_utils.get_flag(assign_num, name), pre_string,)
         grading_file_list.append(name)
 
     # now for each student
@@ -192,37 +196,26 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
             with open(student_file, 'r') as s_file:
                 student_code = s_file.read().replace("\t", "    ")
 
-            for (name, pre_string, problems, post_string) in problem_strings:
-                # Generate a flag to partition the file
-                flag = ""
-                for p in problems:
-                    if len(p) > 1:
-                        if p[-1].isalpha():
-                            if int(p[:-1]) < 10:
-                                flag = flag + "0%i_0%s" % (assign_num, p)
-                            else:
-                                flag = flag + "0%i_%s" % (assign_num, p)
-                        else:
-                            flag = flag + "0%i_%s" % (assign_num, p)
-                    else:
-                        if int(p) < 10:
-                            flag = flag + "0%i_0%s" % (assign_num, p)
-                        else:
-                            flag = flag + "0%i_%s" % (assign_num, p)
+            for i in range(len(problem_list)):
+                name, flag, pre_string, post_string = problem_list[i]
 
-                # Partition the student's file
-                content_string = grading_utils.split_string(student_code, flag)
+                problem_code = grading_utils.split_string(student_code, flag)
+                for j in range(i, -1, -1):
+                    t_name, t_flag, t_pre_string, t_post_string = problem_list[j]
+                    if t_name in problem_code:
+                        cur_problem_code = grading_utils.split_string(student_code, t_flag)
+                        problem_code = cur_problem_code + "\n" + problem_code
 
-                # Write to a grading file
                 if not os.path.exists(os.path.join("asgt0%i-ready" % (assign_num), student, "grading")):
                     os.makedirs(os.path.join("asgt0%i-ready" % (assign_num), student, "grading"))
                 with open(os.path.join("asgt0%i-ready" % (assign_num), student, "grading", "asgt0%i_%s.sml" % (assign_num, name)), "w+") as g_file:
 
-                    g_file.write(content_string + pre_string)
+                    g_file.write(problem_code + pre_string)
 
                     g_file.write("\n\nval _ = print(\"(*BEGIN*)\\n\");\n")
 
                     g_file.write(post_string)
+
         except:
             #File not found
             pass

@@ -8,6 +8,25 @@ January, 2017
 import os
 import re
 
+def get_flag(assign_num, p):
+
+    flag = ""
+    if len(p) > 1:
+        if p[-1].isalpha():
+            if int(p[:-1]) < 10:
+                flag = "0%i_0%s" % (assign_num, p)
+            else:
+                flag = "0%i_%s" % (assign_num, p)
+        else:
+            flag = "0%i_%s" % (assign_num, p)
+    else:
+        if int(p) < 10:
+            flag = "0%i_0%s" % (assign_num, p)
+        else:
+            flag = "0%i_%s" % (assign_num, p)
+
+    return flag
+
 
 def get_requirements(requirements, assign_num):
     """Gets the requirements string from the path"
