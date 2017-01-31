@@ -1,11 +1,12 @@
 import argparse
 import os
+import sys
 import configparser
 from utils import file_utils, cmd_utils, grading_utils
 import multiprocessing
 import datetime
 from argparse import RawTextHelpFormatter
-from ...grading_scripts.student_list import STUDENT_LIST
+from grading_scripts.student_list import STUDENT_LIST
 
 
 def print_student(assign_num, student, files=None):
@@ -74,31 +75,27 @@ def check_files_student(assign_num, student_name):
         assign_num), os.path.join("asgt0%i-ready" % (assign_num), student_name))
 
 
+
+
 def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
     """Gathers the files for the appropriate assignment and copies them to
-    $assign_num$-ready and generates the sml grading subfiles for each student
+    $assign_num$-ready
 
     assign_num:         assignment number
     overwrite:          do you overwrite the files already in there?
     students:           which students to use (default all)
     """
      # Load the config file
+
+
     config = configparser.ConfigParser()
 
 
     config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
-    num_points = config["Assignment"]["TotalPoints"]
-    
-    style_points = 2
-    if "StylePoints" in config["Assignment"]:
-        style_points = config["Assignment"]["StylePoints"]  
-    
-    num_problems = int(config["Assignment"]["NumProblems"])
+
     submit_files = config["Assignment"]["Files"].split(",")
 
-    #Gather the files
 
-  
     file_list = file_utils.move_files(submit_files, "asgt0%i-submissions" %(assign_num), "asgt0%i-ready" %(assign_num), stdt_list=students)
 
     with open(os.path.join("asgt0%i-ready" %(assign_num), "files.txt"), 'w+') as f:
@@ -115,6 +112,29 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
                     f.write("\t\t%s\n" %(m))
             f.write("\n")
 
+
+
+
+def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
+
+  
+    config = configparser.ConfigParser()
+
+
+    config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
+    num_points = config["Assignment"]["TotalPoints"]
+    
+    style_points = 2
+    if "StylePoints" in config["Assignment"]:
+        style_points = config["Assignment"]["StylePoints"]  
+    
+    num_problems = int(config["Assignment"]["NumProblems"])
+    submit_files = config["Assignment"]["Files"].split(",")
+
+    #Gather the files
+
+
+
     #Get the list of problems from the config file and get the appropriate information
     problem_config = []
     for i in range(num_problems):
@@ -124,6 +144,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
                 problem_config.append(("%i%s" %(cur_num, sub_problem), config["%i%s" %(cur_num, sub_problem)]))
         else:
             problem_config.append((str(cur_num), config[str(cur_num)]))
+
 
 
 
@@ -141,43 +162,37 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
 
     # (name (number), flag, pregrade_code (not problems), test_script)
 
-    # problem 1...
-    # problem n...
-    # (==grader code==)
-    # pregrade code
-    # scripts
     problem_list = []
-    for name, problem in problem_config:
-        req_list = grading_utils.get_requirements(problem["requirements"], assign_num)
+    for (name, config_problem) in problem_config:
+        problem_number = name
+        problem_name = config_problem["Name"]
+        problem_requirements = grading_utils.get_requirements(config_problem["requirements"], assign_num)
+        problem_flag = grading_utils.get_flag(assign_num, problem_number)
 
-        # Fancy formatting
         pre_string = "\n\n(*=====================Grader Code=====================*)\n"
 
-        # Read from each of the req files
-        for r in req_list:
+        for r in problem_requirements:
             if os.path.exists(r):
                 with open(r, "r") as f:
                     pre_string = pre_string + f.read() + "\n"
             else:
                 pre_string = pre_string + grading_utils.split_string(pregrade_string, r)
 
-
-        # Read from the script file
-        post_string = ""
-
-        file_name = ""
-        if "Script" in problem:
-            file_name = problem["Script"]
+        if "Script" in problem_config:
+            file_name = problem_config["Script"]
         else:
             file_name = "asgt0%i_%s.sml" %(assign_num, name)
 
+        pre_string = pre_string + "\n\nval _ = print(\"(*BEGIN*)\\n\");\n"
+
         with open(os.path.join("CS52-GradingScripts", "asgt0%i" % (assign_num), file_name), "r") as f_grade:
-            post_string = f_grade.read()
+            pre_string = pre_string + f_grade.read()
 
-        # Put into a list
-        problem_list.append(name, grading_utils.get_flag(assign_num, name), pre_string,)
-        grading_file_list.append(name)
-
+        problem_list.append((
+                            problem_number,
+                            problem_name,
+                            problem_flag,
+                            pre_string))
     # now for each student
 
     print("\nGenerating Subfiles")
@@ -196,35 +211,67 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
             with open(student_file, 'r') as s_file:
                 student_code = s_file.read().replace("\t", "    ")
 
-            for i in range(len(problem_list)):
-                name, flag, pre_string, post_string = problem_list[i]
 
-                problem_code = grading_utils.split_string(student_code, flag)
-                for j in range(i, -1, -1):
-                    t_name, t_flag, t_pre_string, t_post_string = problem_list[j]
-                    if t_name in problem_code:
-                        cur_problem_code = grading_utils.split_string(student_code, t_flag)
-                        problem_code = cur_problem_code + "\n" + problem_code
+            #Generate the code associated with each problem
+            #Yes, this should be a dictionary but I don't
+            #want to have worry about ordering a dictionary
+            problem_code = []
+            for p in problem_list:
+                problem_code.append((p[1], grading_utils.split_string(student_code, p[2]), []))
 
+            #Reverse the list and do it this way
+            #Because the normal way is too much work
+            #...yeah
+
+            problem_code = problem_code[::-1]
+            for i in range(len(problem_code)):
+                for j in range(i, len(problem_code)):
+                    p, p_code, p_sub = problem_code[i]
+                    p2, p2_code, p2_sub = problem_code[j]
+                    if p2 in p_code:
+                        if p2 in p_sub:
+                            pass
+                        else:
+                            p_sub.append(p2)
+
+            problem_code = problem_code[::-1]
+
+            new_problem_code = []
+            for name, code, sub_problems in problem_code:
+
+                for sub in sub_problems:
+                    for n, c, s in problem_code:
+                        if (n == sub and n != name):
+                            code = c + code
+                new_problem_code.append((name, code, sub_problems))
+            
+            for ((number, name, flag, grading_string), (name2, code, sub_problems)) in zip(problem_list, new_problem_code):
                 if not os.path.exists(os.path.join("asgt0%i-ready" % (assign_num), student, "grading")):
                     os.makedirs(os.path.join("asgt0%i-ready" % (assign_num), student, "grading"))
                 with open(os.path.join("asgt0%i-ready" % (assign_num), student, "grading", "asgt0%i_%s.sml" % (assign_num, name)), "w+") as g_file:
 
-                    g_file.write(problem_code + pre_string)
+                    g_file.write(code + grading_string)
 
-                    g_file.write("\n\nval _ = print(\"(*BEGIN*)\\n\");\n")
+           
 
-                    g_file.write(post_string)
-
-        except:
-            #File not found
+        except  FileNotFoundError:
             pass
+            #File not found
+           
 
         cur_progress = cur_progress + 1
     print()
 
     return grading_file_list
 
+
+def generate_subfiles_student(assign_num, student, overwrite=False):
+    to_grade = []
+    pattern = re.compile(student_name)
+    for (name, email, section) in student_list.STUDENT_LIST:
+        if pattern.match(name).group(0) != '' or pattern.match(email).group(0):
+            to_grade.append((name, email, section))
+    return generate_subfiles(assign_num, overwrite, to_grade)
 
 def gather_files_student(assign_num, overwrite=False, student_name=""):
     """Gather the files of a particular student
@@ -259,6 +306,7 @@ def grade_student(assign_num, student, student_file, config, problems, grading_f
         for t in timestamp_list:
             l = t.split(",")
             timestamps.append((l[0],l[1]))
+    
 
     #Adjust the timezone and format the string
     timestamp_string = ""
@@ -386,7 +434,8 @@ Submission Date:
 
 
 def grade_assignment(assign_num, overwrite, num_partitions=-1, students=STUDENT_LIST):
-    problems = gather_files(assign_num, overwrite, students)
+    gather_files(assign_num, overwrite, students)
+    problems = generate_subfiles(assign_num, overwrite, students)
     grading_file_list = ["asgt0%i_%s.sml" %(assign_num, n) for n in problems]
 
     #Parse the config file
@@ -468,6 +517,10 @@ def main():
     [optional] which student to select
     """)
 
+    parser.add_argument('--generate', action='store', dest='generate', default=-1, type=int, help="""
+    Regenerate subfiles for grading
+    """)
+
     parser.add_argument('-overwrite', action='store_true', dest='overwrite', help="""
     [optional] force refresh the files, overwriting any changes made to local files.
     """)
@@ -491,6 +544,11 @@ def main():
         else:
             check_files(res.check)
 
+    if res.generate is not -1:
+        if res.student is not None:
+            generate_subfiles_student(res.generate, res.student)
+        else:
+            generate_subfiles(res.generate)
 
     if res.grade is not -1:
         if res.student is not None:

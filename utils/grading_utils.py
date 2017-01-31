@@ -44,9 +44,6 @@ def get_requirements(requirements, assign_num):
                                     "asgt0%i" % (assign_num), cur_req + ".sml")
             if os.path.exists(cur_path):
                 return_list.append(cur_path)
-        elif "$ASSIGN$" in req:
-            cur_req = req.split("/")[-1]
-            cur_req = "-%s-" %(cur_req)
         else:
             req_parts = req.split("_")
             if req_parts[-1] == "exact":
