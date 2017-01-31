@@ -388,8 +388,8 @@ Submission Date:
 
 
     #Print the deductions
-    output_string = output_string + ("Deductions:\nProblem | Points Taken\n" +
-                    "\n".join([p.ljust(8) + "|" + str(d).rjust(10) for (p,d) in summary_list]))
+    output_string = output_string + ("Deductions:\nProblem | Points Given\n" +
+                    "\n".join([p.ljust(8) + "|" + (str(int(config[p]["NumPoints"]) - d) + "/" config[p]["NumPoints"]).rjust(10) for (p,d) in summary_list]))
 
     #Format check the assignment
     (too_long, contains_tab, comments, linecount) = grading_utils.format_check(student_file)
