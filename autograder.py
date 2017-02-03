@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 import configparser
 from utils import file_utils, cmd_utils, grading_utils
 import multiprocessing
@@ -116,17 +117,17 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
 
 def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
 
-  
+
     config = configparser.ConfigParser()
 
 
     config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
     num_points = config["Assignment"]["TotalPoints"]
-    
+
     style_points = 2
     if "StylePoints" in config["Assignment"]:
-        style_points = config["Assignment"]["StylePoints"]  
-    
+        style_points = config["Assignment"]["StylePoints"]
+
     num_problems = int(config["Assignment"]["NumProblems"])
     submit_files = config["Assignment"]["Files"].split(",")
 
@@ -146,6 +147,7 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
 
 
 
+
     # Generate sml subfiles
 
     # Generate list of strings for each problem
@@ -158,41 +160,39 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
     with open(os.path.join("pregrade_files", "pregrade.sml"), 'r') as pregrade:
         pregrade_string = pregrade.read()
 
-    for name, problem in problem_config:
-        req_list = grading_utils.get_requirements(problem["requirements"], assign_num)
+    # (name (number), flag, pregrade_code (not problems), test_script)
 
-        # Fancy formatting
+    problem_list = []
+    for (name, config_problem) in problem_config:
+        problem_number = name
+        problem_name = config_problem["Name"]
+        problem_requirements = grading_utils.get_requirements(config_problem["requirements"], assign_num)
+        problem_flag = grading_utils.get_flag(assign_num, problem_number)
+
         pre_string = "\n\n(*=====================Grader Code=====================*)\n"
 
-        # Read from each of the req files
-        problems = []
-        for r in req_list:
-            if r.startswith('-') and r.endswith('-'):
-                problems.append(r[1:-1])
+        for r in problem_requirements:
+            if os.path.exists(r):
+                with open(r, "r") as f:
+                    pre_string = pre_string + f.read() + "\n"
             else:
-                if os.path.exists(r):
-                    with open(r, "r") as f:
-                        pre_string = pre_string + f.read() + "\n"
-                else:
-                    pre_string = pre_string + grading_utils.split_string(pregrade_string, r)
+                pre_string = pre_string + grading_utils.split_string(pregrade_string, r)
 
-        problems.append(name)
-        # Read from the script file
-        post_string = ""
-
-        file_name = ""
-        if "Script" in problem:
-            file_name = problem["Script"]
+        if "Script" in problem_config:
+            file_name = problem_config["Script"]
         else:
             file_name = "asgt0%i_%s.sml" %(assign_num, name)
 
+        pre_string = pre_string + "\n\nval _ = print(\"(*BEGIN*)\\n\");\n"
+
         with open(os.path.join("CS52-GradingScripts", "asgt0%i" % (assign_num), file_name), "r") as f_grade:
-            post_string = f_grade.read()
-
-        # Put into a list
-        problem_strings.append((name, pre_string, problems, post_string))
-        grading_file_list.append(name)
-
+            pre_string = pre_string + f_grade.read()
+        grading_file_list.append((problem_number, problem_name))
+        problem_list.append((
+                            problem_number,
+                            problem_name,
+                            problem_flag,
+                            pre_string))
     # now for each student
 
     print("\nGenerating Subfiles")
@@ -211,44 +211,55 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
             with open(student_file, 'r') as s_file:
                 student_code = s_file.read().replace("\t", "    ")
 
-            for (name, pre_string, problems, post_string) in problem_strings:
-                # Generate a flag to partition the file
-                flags = []
-                for p in problems:
-                    if len(p) > 1:
-                        if p[-1].isalpha():
-                            if int(p[:-1]) < 10:
-                                flags.append("0%i_0%s " % (assign_num, p))
-                            else:
-                                flags.append("0%i_%s " % (assign_num, p))
-                        else:
-                            flags.append("0%i_%s " % (assign_num, p))
-                    else:
-                        if int(p) < 10:
-                            flags.append("0%i_0%s " % (assign_num, p))
-                        else:
-                            flags.append("0%i_%s " % (assign_num, p))
 
-                # Partition the student's file
-                content_string = "\n".join([grading_utils.split_string(student_code, flag.strip()) for flag in flags])
+            #Generate the code associated with each problem
+            #Yes, this should be a dictionary but I don't
+            #want to have worry about ordering a dictionary
+            problem_code = []
+            for p in problem_list:
+                problem_code.append((p[1], grading_utils.split_string(student_code, p[2]), []))
 
-                # Write to a grading file
+            #Reverse the list and do it this way
+            #Because the normal way is too much work
+            #...yeah
+
+            problem_code = problem_code[::-1]
+            for i in range(len(problem_code)):
+                for j in range(i, len(problem_code)):
+                    p, p_code, p_sub = problem_code[i]
+                    p2, p2_code, p2_sub = problem_code[j]
+                    if p2 in p_code:
+                        if p2 in p_sub:
+                            pass
+                        else:
+                            p_sub.append(p2)
+
+            problem_code = problem_code[::-1]
+
+            new_problem_code = []
+            for name, code, sub_problems in problem_code:
+                for sub in sub_problems:
+                    for n, c, s in problem_code:
+                        if (n == sub and n != name):
+                            code = c + code
+                new_problem_code.append((name, code, sub_problems))
+
+            for ((number, name, flag, grading_string), (name2, code, sub_problems)) in zip(problem_list, new_problem_code):
                 if not os.path.exists(os.path.join("asgt0%i-ready" % (assign_num), student, "grading")):
                     os.makedirs(os.path.join("asgt0%i-ready" % (assign_num), student, "grading"))
                 with open(os.path.join("asgt0%i-ready" % (assign_num), student, "grading", "asgt0%i_%s.sml" % (assign_num, name)), "w+") as g_file:
 
-                    g_file.write(content_string + pre_string)
+                    g_file.write(code + grading_string)
 
-                    g_file.write("\n\nval _ = print(\"(*BEGIN*)\\n\");\n")
 
-                    g_file.write(post_string)
-        except:
-            #File not found
+
+        except  FileNotFoundError:
             pass
+            #File not found
+
 
         cur_progress = cur_progress + 1
     print()
-
     return grading_file_list
 
 
@@ -275,11 +286,11 @@ def gather_files_student(assign_num, overwrite=False, student_name=""):
     return gather_files(assign_num, overwrite, to_grade)
 
 
-def grade_student(assign_num, student, student_file, config, problems, grading_file_list, cur_progress, total_points):
+def grade_student(assign_num, student, student_file, config, problems, cur_progress, total_points):
+
 
     #Parse the Information out of the studnet name
     (name, email, section) = student
-
 
     #Generate the timestamps of the files submitted
     timestamps = ""
@@ -294,23 +305,24 @@ def grade_student(assign_num, student, student_file, config, problems, grading_f
             l = t.split(",")
             timestamps.append((l[0],l[1]))
 
+
     #Adjust the timezone and format the string
     timestamp_string = ""
     for (f, t) in timestamps:
         time = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S")
         due_date = datetime.datetime.strptime(config["Assignment"]["DueDate"], "%Y-%m-%d %H:%M:%S")
         if time < due_date:
-            timestamp_string = timestamp_string + ("  %s" %(f)).ljust(19) + "%s\n" %(time.strftime("%b %d, %H:%M:%S")) 
+            timestamp_string = timestamp_string + ("  %s" %(f)).ljust(19) + "%s\n" %(time.strftime("%b %d, %H:%M:%S"))
         else:
-            timestamp_string = timestamp_string + ("  %s" %(f)).ljust(19) + "%s (LATE)\n" %(time.strftime("%b %d, %H:%M:%S")) 
+            timestamp_string = timestamp_string + ("  %s" %(f)).ljust(19) + "%s (LATE)\n" %(time.strftime("%b %d, %H:%M:%S"))
 
 
     #Base for the output string
     output_string = """
 Name:              %s
 Email:             %s
-Section:           %s  
-Submission Date:   
+Section:           %s
+Submission Date:
 %sAssignment Num:    %i\n\n
 """ %(name,
     email,
@@ -323,8 +335,8 @@ Submission Date:
     num_not_compiled = 0
 
     #Run each of the files in student_name/grading
-    for p, f in zip(problems, grading_file_list):
-
+    for p, f in problems:
+        f = "asgt0%i_%s.sml" %(assign_num, f)
         #Adjust progress bar
         cur_progress = cur_progress + 1
         cmd_utils.progress(cur_progress, total_points, "%s : %s" %(name, p))
@@ -374,8 +386,8 @@ Submission Date:
 
 
     #Print the deductions
-    output_string = output_string + ("Deductions:\nProblem | Points Taken\n" +
-                    "\n".join([p.ljust(8) + "|" + str(d).rjust(10) for (p,d) in summary_list]))
+    output_string = output_string + ("Deductions:\nProblem | Points Given\n" +
+                    "\n".join([p.ljust(8) + "|" + (str(float(config[p]["Points"]) - d) + "/" + config[p]["Points"]).rjust(10) for (p,d) in summary_list]))
 
     #Format check the assignment
     (too_long, contains_tab, comments, linecount) = grading_utils.format_check(student_file)
@@ -422,8 +434,6 @@ Submission Date:
 def grade_assignment(assign_num, overwrite, num_partitions=-1, students=STUDENT_LIST):
     gather_files(assign_num, overwrite, students)
     problems = generate_subfiles(assign_num, overwrite, students)
-    grading_file_list = ["asgt0%i_%s.sml" %(assign_num, n) for n in problems]
-
     #Parse the config file
     config = configparser.ConfigParser()
 
@@ -456,7 +466,6 @@ def grade_assignment(assign_num, overwrite, num_partitions=-1, students=STUDENT_
                         os.path.join("asgt0%i-ready" %assign_num, name, "%s-%s" %(name, submit_files[0])),
                         config,
                         problems,
-                        grading_file_list,
                         cur_num, total_files)
 
 
@@ -476,7 +485,7 @@ def grade_assignment_student(assign_num, overwrite=False, student_name=""):
     for (name, email, section) in STUDENT_LIST:
         if student_name in name or student_name in email:
             to_grade.append((name, email, section))
-    grade_assignment(assign_num, overwrite, to_grade)
+    grade_assignment(assign_num, overwrite, students=to_grade)
 
 
 def main():
