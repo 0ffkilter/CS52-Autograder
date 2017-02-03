@@ -99,6 +99,6 @@ def run_file(read_file, timeout=5, delete=False):
 
 
     if delete:
-        os.remove(read_file)    
+        os.remove(read_file)
 
     return output
