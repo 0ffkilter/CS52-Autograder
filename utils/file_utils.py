@@ -27,7 +27,7 @@ class StudentNotFound(LookupError):
 
 def zipdir(path, ziph):
     """Zips a directory
-    
+
 
     Taken from StackOverflow
     """
@@ -48,7 +48,7 @@ def zip_students(assign_num, start_name, end_name, zip_name=None, progress=None)
 
     cur_progress = 0
     total_progress = 0
-    
+
     if progress is None:
         cur_progress = 1
         total_progress = len(STUDENT_LIST)
@@ -84,9 +84,9 @@ def partition_assignment(assign_num, num_partitions):
     for i in range(num_extra):
         first_student= STUDENT_LIST[current_idx][0]
         last_student = STUDENT_LIST[current_idx + num_students_partition][0]
-        cur_progress = zip_students(assign_num, 
-            first_student, last_student, 
-            os.path.join(zip_dir, "asgt0%i-%s-%s.zip" %(assign_num, first_student, last_student)), 
+        cur_progress = zip_students(assign_num,
+            first_student, last_student,
+            os.path.join(zip_dir, "asgt0%i-%s-%s.zip" %(assign_num, first_student, last_student)),
             (cur_progress, total_progress))
         current_idx = current_idx + num_students_partition + 1
 
@@ -248,12 +248,12 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
                         for f in filenames:
                             #if it's one of the files we're looking for
                             if f in files:
-                                
+
                                 content = ""
                                 with open(os.path.join(dirpath, f), 'r') as f_temp:
                                     content = f_temp.read()
                                 if  dirpath.count("-") == 4 or (student in content[:100]) or student[:-1] in content[:100]:
-                                    
+
                                     idx = dirpath.find("Z-") + 2
                                     student_id = dirpath[idx:].split("-")[0]
                                     #get the student id
@@ -264,7 +264,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
                                         #if it matches the name
                                         if file_name == f:
                                             #if the new one is older keep the previous one
-                                            if time > timestamp:
+                                            if time < timestamp:
                                                 new_file_list.append((cur_path, file_name,timestamp))
                                             else:
                                                 #keep the one we just found
@@ -277,7 +277,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
                                         new_file_list.append((dirpath, f, time))
 
                                     file_list = new_file_list
-                                
+
 
         present_list = []
         missing_list = []
@@ -291,7 +291,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
         #For each file copy it over
         with open(os.path.join(file_tgt_dir, ".timestamps.txt"), 'w+') as f:
             for (d, n, t) in file_list:
-                
+
                 #Adjust for PST
                 time = t - datetime.timedelta(hours=8)
                 file_src_name = os.path.join(d,n)
