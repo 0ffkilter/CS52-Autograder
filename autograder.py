@@ -224,27 +224,31 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
             #...yeah
 
             problem_code = problem_code[::-1]
+
+            new_problem_code = []
             for i in range(len(problem_code)):
+
+                p, p_code, p_sub = problem_code[i]
                 for j in range(i, len(problem_code)):
-                    p, p_code, p_sub = problem_code[i]
                     p2, p2_code, p2_sub = problem_code[j]
                     if p2 in p_code:
                         if p2 in p_sub:
                             pass
                         else:
-                            p_sub.append(p2)
+                            p_sub = p_sub + [p2] + p2_sub
+                new_problem_code.append((p, p_code, p_sub))
 
-            problem_code = problem_code[::-1]
+            new_problem_code = new_problem_code[::-1]
 
-            new_problem_code = []
-            for name, code, sub_problems in problem_code:
+            problem_code = []
+            for name, code, sub_problems in new_problem_code:
                 for sub in sub_problems:
                     for n, c, s in problem_code:
                         if (n == sub and n != name):
                             code = c + code
-                new_problem_code.append((name, code, sub_problems))
+                problem_code.append((name, code, sub_problems))
 
-            for ((number, name, flag, grading_string), (name2, code, sub_problems)) in zip(problem_list, new_problem_code):
+            for ((number, name, flag, grading_string), (name2, code, sub_problems)) in zip(problem_list, problem_code):
                 if not os.path.exists(os.path.join("asgt0%i-ready" % (assign_num), student, "grading")):
                     os.makedirs(os.path.join("asgt0%i-ready" % (assign_num), student, "grading"))
                 with open(os.path.join("asgt0%i-ready" % (assign_num), student, "grading", "asgt0%i_%s.sml" % (assign_num, name)), "w+") as g_file:
@@ -256,7 +260,8 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
         except  FileNotFoundError:
             pass
             #File not found
-
+        except:
+            print("Unexpected error:", sys.exc_info()[0])
 
         cur_progress = cur_progress + 1
     print()
