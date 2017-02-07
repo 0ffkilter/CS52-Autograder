@@ -423,12 +423,12 @@ Submission Date:
 
     total_deduction = sum([b for (a,b) in summary_list])
 
-    output_string = output_string + "Style Points:       %i/%i\n" %(style_points, total_style_points)
-    output_string = output_string + "Correctness Points: %i/%i\n" %(total_points - total_deduction, total_points)
+    output_string = output_string + "Style Points:       %f/%i\n" %(style_points, total_style_points)
+    output_string = output_string + "Correctness Points: %f/%i\n" %(total_points - total_deduction, total_points)
 
 
     output_string = output_string + "\n=====Grader Comments======\n\n\n\n\n\n\n\n\n\n"
-    output_string = output_string + "Total Points:       %i/%i\n" %(style_points + total_points - total_deduction, total_points + total_style_points)
+    output_string = output_string + "Total Points:       %f/%i\n" %(style_points + total_points - total_deduction, total_points + total_style_points)
     grade_path = os.path.join("asgt0%i-ready" %(assign_num), name, "grades.txt")
     with open(grade_path, "w+") as f:
         f.write(output_string)
