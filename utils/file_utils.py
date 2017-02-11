@@ -247,35 +247,37 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
                         for f in filenames:
                             #if it's one of the files we're looking for
                             content = ""
-                            with open(os.path.join(dirpath, f), 'r') as f_temp:
-                                content = f_temp.read()
-                            if  dirpath.count("-") == 4 or (student in content[:100]) or student[:-1] in content[:100]:
+                            try:
+                                with open(os.path.join(dirpath, f), 'r') as f_temp:
+                                    content = f_temp.read()
+                            except:
+                                if  dirpath.count("-") == 4 or (student in content[:100]) or student[:-1] in content[:100]:
 
-                                idx = dirpath.find("Z-") + 2
-                                student_id = dirpath[idx:].split("-")[0]
-                                #get the student id
-                                new_file_list = []
-                                found = False
-                                #for each of the files we've found for for this student
-                                for (cur_path, file_name, timestamp) in file_list:
-                                    #if it matches the name
-                                    if file_name == f:
-                                        #if the new one is older keep the previous one
-                                        if time < timestamp:
-                                            new_file_list.append((cur_path, file_name,timestamp))
+                                    idx = dirpath.find("Z-") + 2
+                                    student_id = dirpath[idx:].split("-")[0]
+                                    #get the student id
+                                    new_file_list = []
+                                    found = False
+                                    #for each of the files we've found for for this student
+                                    for (cur_path, file_name, timestamp) in file_list:
+                                        #if it matches the name
+                                        if file_name == f:
+                                            #if the new one is older keep the previous one
+                                            if time < timestamp:
+                                                new_file_list.append((cur_path, file_name,timestamp))
+                                            else:
+                                                #keep the one we just found
+                                                new_file_list.append((dirpath, f, time))
+                                            found = True
+                                            #if it doesn't match, keep the old no matter what
                                         else:
-                                            #keep the one we just found
-                                            new_file_list.append((dirpath, f, time))
-                                        found = True
-                                        #if it doesn't match, keep the old no matter what
-                                    else:
-                                        new_file_list.append((cur_path, file_name, timestamp))
-                                if not found:
-                                    new_file_list.append((dirpath, f, time))
+                                            new_file_list.append((cur_path, file_name, timestamp))
+                                    if not found:
+                                        new_file_list.append((dirpath, f, time))
 
-                                file_list = new_file_list
-                            else:
-                                print("failed check")
+                                    file_list = new_file_list
+                                else:
+                                    print("failed check")
 
 
         present_list = []
