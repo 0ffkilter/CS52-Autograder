@@ -131,6 +131,8 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
     num_problems = int(config["Assignment"]["NumProblems"])
     submit_files = config["Assignment"]["Files"].split(",")
 
+
+
     #Gather the files
 
 
@@ -195,6 +197,11 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
                             pre_string))
     # now for each student
 
+    pre_content = ""
+    if 'PreFile' in config["Assignment"]:
+        with open(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), config["Assignment"]["PreFile"]), 'r') as f:
+            pre_content = f.read()
+
     print("\nGenerating Subfiles")
     cur_progress = 1
     total_progress = len(students)
@@ -253,7 +260,7 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
                     os.makedirs(os.path.join("asgt0%i-ready" % (assign_num), student, "grading"))
                 with open(os.path.join("asgt0%i-ready" % (assign_num), student, "grading", "asgt0%i_%s.sml" % (assign_num, name)), "w+") as g_file:
 
-                    g_file.write(code + grading_string)
+                    g_file.write(pre_content + code + grading_string)
 
 
 
