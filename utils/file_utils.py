@@ -231,7 +231,6 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
         possibleFiles = glob.glob(os.path.join(source_dir, "*" + anyCase(email) + "*"))
         if len(possibleFiles) == 0:
             return_list.append((student, [], files))
-
         file_list = []
 
         #possible matches
@@ -275,6 +274,8 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
                                     new_file_list.append((dirpath, f, time))
 
                                 file_list = new_file_list
+                            else:
+                                print("failed check")
 
 
         present_list = []
@@ -295,7 +296,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
                 file_src_name = os.path.join(d,n)
                 file_tgt_name = os.path.join(file_tgt_dir, "%s-%s" %(student, n))
                 present_list.append(n)
-                f.write("%s,%s" %(n,datetime.datetime.strftime(time, "%Y-%m-%d %H:%M:%S")))
+                f.write("%s,%s\n" %(n,datetime.datetime.strftime(time, "%Y-%m-%d %H:%M:%S")))
                 #If the overwrite flag isn't True, check before copy
                 if not overwrite:
                     if not os.path.exists(file_tgt_name):

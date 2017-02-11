@@ -303,10 +303,10 @@ def grade_student(assign_num, student, student_file, config, problems, cur_progr
         timestamps = t.read()
 
     timestamp_list = timestamps.split("\n")
-    if ',' in timestamps:
-        timestamps = []
+    timestamps = []
 
-        for t in timestamp_list:
+    for t in timestamp_list:
+        if ',' in t:
             l = t.split(",")
             timestamps.append((l[0],l[1]))
 
