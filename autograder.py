@@ -313,14 +313,16 @@ def grade_student(assign_num, student, student_file, config, problems, cur_progr
 
     #Adjust the timezone and format the string
     timestamp_string = ""
-    for (f, t) in timestamps:
-        time = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S")
-        due_date = datetime.datetime.strptime(config["Assignment"]["DueDate"], "%Y-%m-%d %H:%M:%S")
-        if time < due_date:
-            timestamp_string = timestamp_string + ("  %s" %(f)).ljust(19) + "%s\n" %(time.strftime("%b %d, %H:%M:%S"))
-        else:
-            timestamp_string = timestamp_string + ("  %s" %(f)).ljust(19) + "%s (LATE)\n" %(time.strftime("%b %d, %H:%M:%S"))
-
+    try:
+        for (f, t) in timestamps:
+            time = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S")
+            due_date = datetime.datetime.strptime(config["Assignment"]["DueDate"], "%Y-%m-%d %H:%M:%S")
+            if time < due_date:
+                timestamp_string = timestamp_string + ("  %s" %(f)).ljust(19) + "%s\n" %(time.strftime("%b %d, %H:%M:%S"))
+            else:
+                timestamp_string = timestamp_string + ("  %s" %(f)).ljust(19) + "%s (LATE)\n" %(time.strftime("%b %d, %H:%M:%S"))
+    except:
+        pass
 
     #Base for the output string
     output_string = """
