@@ -250,7 +250,6 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
                             try:
                                 with open(os.path.join(dirpath, f), 'r') as f_temp:
                                     content = f_temp.read()
-                            except:
                                 if  dirpath.count("-") == 4 or (student in content[:100]) or student[:-1] in content[:100]:
 
                                     idx = dirpath.find("Z-") + 2
@@ -278,6 +277,8 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
                                     file_list = new_file_list
                                 else:
                                     print("failed check")
+                            except:
+                                pass
 
 
         present_list = []
