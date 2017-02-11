@@ -50,6 +50,9 @@ def get_requirements(requirements, assign_num):
                 return_list.append("list_compare_exact")
             elif req_parts[-1] == "list":
                 return_list.append("list_compare")
+            elif req_parts[-1] == "knuth":
+                return_list.append("list_compare")
+                return_list.append("list_compare_exact")
             return_list.append(req)
     return return_list
 

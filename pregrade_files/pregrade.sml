@@ -38,6 +38,10 @@ fun test_2_error information help function arg1 arg2 error = let fun error_help 
 fun test_2_exact information help function arg1 arg2 retval = if (list_compare_exact (function arg1 arg2) (retval)) = true then print(information ^ ":\t PASS\n") else print (information ^ ":\t FAIL\n\t" ^ help ^ "\n");
 (*** test_2_exact $-test_2_exact ***)
 
+(*** test_2_knuth $+test_2_knuth ***)
+fun test_2_knuth information help function arg1 arg2 retval = let val result = function arg1 arg2 val permutation = list_compare result retval val isSame = list_compare_exact result retval in if permutation = true andalso isSame = false then print(information ^ ":\t PASS\n") else print (information ^ ":\t FAIL\n\t" ^ help ^ "\n") end;
+(*** test_2_knuth $-test_2_knuth ***)
+
 (*** test_2_list $+test_2_list ***)
 fun test_2_list information help function arg1 arg2 retval = if (list_compare (function arg1 arg2) (retval)) = true then print(information ^ ":\t PASS\n") else print (information ^ ":\t FAIL\n\t" ^ help ^ "\n");
 (*** test_2_list $-test_2_list ***)

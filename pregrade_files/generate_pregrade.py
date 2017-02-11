@@ -11,6 +11,7 @@ compact = True
 files = [f for f in os.listdir(os.path.join(os.getcwd(), "sml_files")) if '.sml' in f]
 
 for file in files:
+	print(file)
 	content = ''
 	with open(os.path.join("sml_files", file), 'r') as f:
 		if not compact:
