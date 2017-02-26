@@ -419,12 +419,24 @@ Submission Date:
             cmd_utils.progress(cur_progress, total_points, "%s : %s" %(name, p))
 
             to_run = ""
-            if "File" in c_p:
-                to_run = c_p["File"]
+            cur_path = ""
+            answer_file = ""
+            if "Mode" in c_p and c_p["Mode"] == "DIRECT":
+                
+                cur_path = os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "resources", c_p["File"])
+                
+                answer_file =os.path.join("asgt0%i-ready" %(assign_num), name, c_p["File"])
+
+
+
+                
             else:
-                to_run = c_p["Name"][:c_p["Name"].find("_")]
-            cur_path = os.path.join("asgt0%i-ready" %(assign_num), name, "%s.a52" %(to_run))
-            answer_file = os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "%s.a52" %(c_p["Name"]))
+                if "File" in c_p:
+                    to_run = c_p["File"]
+                else:
+                    to_run = c_p["Name"][:c_p["Name"].find("_")]
+                cur_path = os.path.join("asgt0%i-ready" %(assign_num), name, "%s.a52" %(to_run))
+                answer_file = os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "%s.a52" %(c_p["Name"]))
 
             output = cmd_utils.run_a52(cur_path, answer_file, assign_num=assign_num)
 
