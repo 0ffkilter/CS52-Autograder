@@ -84,6 +84,7 @@ def run_file(read_file, timeout=5, delete=False):
     prefix = "cat"
     if platform().find("Windows") != -1:
         prefix = "type"  #Windows Compatability!
+        #Haha jk doesn't actually work anymore :(
 
     cmd = "%s %s | sml" %(prefix, read_file)
 
@@ -102,3 +103,25 @@ def run_file(read_file, timeout=5, delete=False):
         os.remove(read_file)
 
     return output
+
+
+def run_a52(script_file, input_file, path_to_52=None, assign_num=4,timeout=5):
+    if path_to_52 == None or not os.path.exists(path_to_52):
+        path_to_52 = os.path.join("grading_scripts", "asgt0%i" %assign_num, "resources",  "cs52-machine.jar")
+
+    cmd = "java -jar %s -p %s -u %s" %(path_to_52, script_file, input_file)
+
+    start = timer()
+    with Popen(cmd, shell=True, stdout=PIPE, preexec_fn=os.setsid) as process:
+        try:
+            output = process.communicate(timeout=timeout)[0]
+            output = output.decode('ascii')
+        except TimeoutExpired:
+            os.killpg(process.pid, signal.SIGINT) # send signal to the process group
+            output = process.communicate()[0]
+            output = output.decode('ascii')
+
+
+
+    return output
+    

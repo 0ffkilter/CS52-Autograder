@@ -96,6 +96,17 @@ def split_string(string, flag):
             result = result + "\n" + line
     return result
 
+def parse_a52(name, output, expected_answer):
+    pat = re.compile("CS52 says > (\d*)")
+
+    res = pat.search(string)
+    if res is not None:
+        if res.groups(0)[0] == expected_answer:
+            return ("%s:\tPASS" %(name), True)
+        else:
+            return ("%s:\tFAIL\n\tExpected: %s\n\tActual: %s" %(name, expected_answer, res.groups(0)[0]), False)
+
+
 
 def split_file(read_file, flag):
     with open(read_file, 'r') as f:
