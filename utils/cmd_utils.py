@@ -110,7 +110,6 @@ def run_a52(script_file, input_file, path_to_52=None, assign_num=4,timeout=5):
         path_to_52 = os.path.join("grading_scripts", "asgt0%i" %assign_num, "resources",  "cs52-machine.jar")
 
     cmd = "java -jar %s -p %s -u %s" %(path_to_52, script_file, input_file)
-
     start = timer()
     with Popen(cmd, shell=True, stdout=PIPE, preexec_fn=os.setsid) as process:
         try:
@@ -121,7 +120,10 @@ def run_a52(script_file, input_file, path_to_52=None, assign_num=4,timeout=5):
             output = process.communicate()[0]
             output = output.decode('ascii')
 
-
+    if "overuse" in output:
+        print("error\n")
+        print(output)
+        print(script_file, input_file)
 
     return output
-    
+

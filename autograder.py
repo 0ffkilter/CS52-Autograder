@@ -1,4 +1,5 @@
 import argparse
+import shutil
 import os
 import sys
 import configparser
@@ -116,6 +117,9 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
 def generate_a52(assign_num, students=STUDENT_LIST):
     config = configparser.ConfigParser()
 
+    config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
+    num_problems = int(config["Assignment"]["NumProblems"])
+
     problem_config = []
     for i in range(num_problems):
         cur_num = i + 1
@@ -126,7 +130,6 @@ def generate_a52(assign_num, students=STUDENT_LIST):
             problem_config.append((str(cur_num), config[str(cur_num)]))
 
     mul_path = os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "resources", "mullib.a52")
-
 
     for (student, email, section) in students:
         shutil.copy(mul_path, os.path.join("asgt0%i-ready" %(assign_num), student, "mullib.a52"))
@@ -369,7 +372,7 @@ Submission Date:
     #Run each of the files in student_name/grading
 
     if config["Assignment"]["Mode"] == "sml" or config["Assignment"]["Mode"] == "":
-        for p, n in problems:
+        for p, f in problems:
             f = "asgt0%i_%s.sml" %(assign_num, f)
             #Adjust progress bar
             cur_progress = cur_progress + 1
@@ -422,21 +425,15 @@ Submission Date:
             cur_path = ""
             answer_file = ""
             if "Mode" in c_p and c_p["Mode"] == "DIRECT":
-                
                 cur_path = os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "resources", c_p["File"])
-                
-                answer_file =os.path.join("asgt0%i-ready" %(assign_num), name, c_p["File"])
-
-
-
-                
+                answer_file =os.path.join("asgt0%i-ready" %(assign_num), name, "%s-%s" %(name, c_p["Name"]))
             else:
                 if "File" in c_p:
                     to_run = c_p["File"]
                 else:
                     to_run = c_p["Name"][:c_p["Name"].find("_")]
-                cur_path = os.path.join("asgt0%i-ready" %(assign_num), name, "%s.a52" %(to_run))
-                answer_file = os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "%s.a52" %(c_p["Name"]))
+                cur_path = os.path.join("asgt0%i-ready" %(assign_num), name, "%s-%s.a52" %(name, to_run))
+                answer_file = os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "%s" %(c_p["Name"]))
 
             output = cmd_utils.run_a52(cur_path, answer_file, assign_num=assign_num)
 
@@ -445,29 +442,30 @@ Submission Date:
             deduction = 0
             if not did_pass:
                 deduction = float(c_p["Points"])
-            summary_list.append(p, c_p["Name"], deduction)
+            summary_list.append((p, c_p["Name"], deduction))
 
-            output_string = "\n" + output_string + "\n"
+            output_string = "\n" + output_string + result + "\n\n"
 
 
 
     #Format the summary and rest of it
     output_string = output_string + "\n\n=====Summary:=====\n\n"
-
+    total_deduction = 0
 
     #Print the deductions
     if config["Assignment"]["Mode"] == "a52":
-        output_string = output_string + ("Deductions:\nProblem | Points Given\n" +
-                    "\n".join([n.ljust(8) + "|" + (str(float(config[p]["Points"]) - d) + "/" + config[p]["Points"]).rjust(10) for (p,n,d) in summary_list]))
-
+        output_string = output_string + ("Deductions:\n\nProblem | Points Given\n" +
+                    "\n".join([n.ljust(16) + "|" + (str(float(config[p]["Points"]) - d) + "/" + config[p]["Points"]).rjust(24) for (p,n,d) in summary_list]))
+        total_deduction = sum([c for (a,b,c) in summary_list])
     else:
+        total_deduction = sum([b for (a,b) in summary_list])
         output_string = output_string + ("Deductions:\nProblem | Points Given\n" +
                     "\n".join([p.ljust(8) + "|" + (str(float(config[p]["Points"]) - d) + "/" + config[p]["Points"]).rjust(10) for (p,d) in summary_list]))
 
     #Format check the assignment
     (too_long, contains_tab, comments, linecount) = grading_utils.format_check(student_file)
 
-    output_string = output_string + "\nStyle:\n"
+    output_string = output_string + "\n\nStyle:\n"
 
     total_style_points = int(config["Assignment"]["StylePoints"])
     style_points = total_style_points
@@ -493,7 +491,6 @@ Submission Date:
     #Rest of it
     total_points = int(config["Assignment"]["TotalPoints"])
 
-    total_deduction = sum([b for (a,b) in summary_list])
 
     output_string = output_string + "Style Points:       %.1f/%i\n" %(style_points, total_style_points)
     output_string = output_string + "Correctness Points: %.1f/%i\n" %(total_points - total_deduction, total_points)
@@ -524,7 +521,7 @@ def grade_assignment(assign_num, overwrite, num_partitions=-1, students=STUDENT_
         #Assume it's sml
         problems = generate_subfiles(assign_num, overwrite, students)
     #Parse the config file
-    
+
 
     num_points = config["Assignment"]["TotalPoints"]
     style_points = config["Assignment"]["StylePoints"]
@@ -555,7 +552,8 @@ def grade_assignment(assign_num, overwrite, num_partitions=-1, students=STUDENT_
                         os.path.join("asgt0%i-ready" %assign_num, name, "%s-%s" %(name, submit_files[0])),
                         config,
                         problems,
-                        cur_num, total_files)
+                        cur_num,
+                        total_files)
 
 
     print("\n")
