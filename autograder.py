@@ -444,7 +444,7 @@ Submission Date:
                 deduction = float(c_p["Points"])
             summary_list.append((p, c_p["Name"], deduction))
 
-            output_string = "\n" + output_string + result + "\n\n"
+            output_string = output_string + result + "\n\n"
 
 
 
