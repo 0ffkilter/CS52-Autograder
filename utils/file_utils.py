@@ -16,6 +16,24 @@ import configparser
 import zipfile
 from grading_scripts.student_list import STUDENT_LIST
 
+
+REZIP_CODE = """
+import zipfile
+import os
+FIRST="%s"
+LAST="%s"
+ASSIGN_NUM=%i
+def zipdir(path, zipf):
+    for root, dirs, files in os.walk(path):
+        for f in files:
+            zipf.write(os.path.join(root, f))
+zipf = zipfile.ZipFile("asgt0" + str(ASSIGN_NUM) + "-finished-" + FIRST + "-" + LAST + ".zip", 'w', zipfile.ZIP_DEFLATED)
+zipdir('asgt0' + str(ASSIGN_NUM) + '-ready', zipf)
+zipf.close()
+"""
+
+
+
 #Directory Error
 class DirectoryNotFound(OSError):
     pass
@@ -35,6 +53,13 @@ def zipdir(path, ziph):
     for root, dirs, files in os.walk(path):
         for file in files:
             ziph.write(os.path.join(root, file))
+
+def join_zip(assign_num, num_partitions):
+    partitions = get_partitions(num_partitions)
+
+    for (first, last) in partitions:
+        zipf = zipfile.ZipFile('asgt0%i-finished-%s-%s.zip' %(assign_num, first, last), 'r', zipfile.ZIP_DEFLATED)
+        zipf.extractall()
 
 def zip_students(assign_num, start_name, end_name, zip_name=None, progress=None):
     zipf = None
@@ -64,9 +89,7 @@ def zip_students(assign_num, start_name, end_name, zip_name=None, progress=None)
     return cur_progress
 
 
-def partition_assignment(assign_num, num_partitions):
-
-    print("Zipping Assignment %i" %(assign_num))
+def get_partitions(num_partitions):
     num_students = len(STUDENT_LIST)
 
     num_students_partition = int(num_students/num_partitions)
@@ -74,27 +97,41 @@ def partition_assignment(assign_num, num_partitions):
 
 
 
+    current_idx = 0
+    partitions = []
+    for i in range(num_extra):
+        first_student= STUDENT_LIST[current_idx][0]
+        last_student = STUDENT_LIST[current_idx + num_students_partition][0]
+        partitions.append((first_student, last_student))
+
+        current_idx = current_idx + num_students_partition + 1
+
+    for i in range(num_partitions - num_extra):
+        first_student= STUDENT_LIST[current_idx][0]
+        last_student = STUDENT_LIST[current_idx + num_students_partition -1 ][0]
+
+        partitions.append((first_student, last_student))
+        current_idx = current_idx + num_students_partition
+
+    return partitions
+
+
+def partition_assignment(assign_num, num_partitions):
+    num_students = len(STUDENT_LIST)
+    print("Zipping Assignment %i" %(assign_num))
+    partitions = get_partitions(num_partitions)
+
     zip_dir = "asgt0%i-dist" %(assign_num)
     if not os.path.exists(zip_dir):
                 os.makedirs(zip_dir)
 
     cur_progress = 1
     total_progress = num_partitions * num_students
-    current_idx = 0
-    for i in range(num_extra):
-        first_student= STUDENT_LIST[current_idx][0]
-        last_student = STUDENT_LIST[current_idx + num_students_partition][0]
+    for (first_student, last_student) in partitions:
         cur_progress = zip_students(assign_num,
             first_student, last_student,
             os.path.join(zip_dir, "asgt0%i-%s-%s.zip" %(assign_num, first_student, last_student)),
             (cur_progress, total_progress))
-        current_idx = current_idx + num_students_partition + 1
-
-    for i in range(num_partitions - num_extra):
-        first_student= STUDENT_LIST[current_idx][0]
-        last_student = STUDENT_LIST[current_idx + num_students_partition -1 ][0]
-        cur_progress = zip_students(assign_num, first_student, last_student, os.path.join(zip_dir, "asgt0%i-%s-%s.zip" %(assign_num, first_student, last_student)), (cur_progress, total_progress))
-        current_idx = current_idx + num_students_partition
 
 
 def get_files(assign_num):
