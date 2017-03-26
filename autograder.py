@@ -94,6 +94,7 @@ def gather_files(assign_num, overwrite=False, students=STUDENT_LIST):
     config.read(os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "config.ini"))
 
     submit_files = config["Assignment"]["Files"].split(",")
+    submit_files = [f.strip() for f in submit_files]
 
 
     file_list = file_utils.move_files(submit_files, "asgt0%i-submissions" %(assign_num), "asgt0%i-ready" %(assign_num), stdt_list=students)
@@ -150,7 +151,10 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
     submit_files = config["Assignment"]["Files"].split(",")
 
 
-
+    files_to_copy = []
+    if "Resources" in config["Assignment"]:
+        files_to_copy = config["Assignment"]["Resources"].split(",")
+        files_to_copy = [f.strip() for f in files_to_copy]
     #Gather the files
 
 
@@ -368,7 +372,17 @@ Submission Date:
 
     #Run each of the files in student_name/grading
 
-    if config["Assignment"]["Mode"] == "sml" or config["Assignment"]["Mode"] == "":
+
+    #0 = sml
+    #1 = a52
+    #2 = a52 pipe
+    mode = 0
+
+    #Problem mode overrites assignment mode
+
+    if not "Mode" in config["Assignment"] or 
+        config["Assignment"]["Mode"] == "sml" or 
+        config["Assignment"]["Mode"] == "":
         for p, n in problems:
             f = "asgt0%i_%s.sml" %(assign_num, f)
             #Adjust progress bar
