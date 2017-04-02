@@ -187,6 +187,11 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
 
     # (name (number), flag, pregrade_code (not problems), test_script)
 
+    assignment_mode = "sml"
+
+    if "Mode" in config["Assignment"]:
+        assignment_mode = config["Assignment"]["Mode"]
+
     problem_list = []
     for (name, config_problem) in problem_config:
         problem_number = name
@@ -213,7 +218,14 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
 
         with open(os.path.join("CS52-GradingScripts", "asgt0%i" % (assign_num), file_name), "r") as f_grade:
             pre_string = pre_string + f_grade.read()
-        grading_file_list.append((problem_number, problem_name))
+
+        cur_mode = assignment_mode
+
+        if "Mode" in config_problem:
+            cur_mode = config_problem["Mode"]
+
+        grading_file_list.append((problem_number, mode, config_problem))
+
         problem_list.append((
                             problem_number,
                             problem_name,
@@ -373,10 +385,9 @@ Submission Date:
     num_not_compiled = 0
 
     #Run each of the files in student_name/grading
-
-    if not "Mode" in config["Assignment"] or config["Assignment"]["Mode"] == "sml" or config["Assignment"]["Mode"] == "":
-        for p, f in problems:
-            f = "asgt0%i_%s.sml" %(assign_num, f)
+    for p, m, f in problems:
+        if m is "sml":
+            f = "asgt0%i_%s.sml" %(assign_num, f["Name"])
             #Adjust progress bar
             cur_progress = cur_progress + 1
             cmd_utils.progress(cur_progress, total_points, "%s : %s" %(name, p))
@@ -419,36 +430,74 @@ Submission Date:
             #Append to thel ist of deductions
             summary_list.append((p, deduction))
             output_string = output_string + problem_string
-    elif "Mode" in config["Assignment"] and  config["Assignment"]["Mode"] == "a52":
-        for p, c_p in problems:
+        elif m is "a52":
             cur_progress = cur_progress + 1
             cmd_utils.progress(cur_progress, total_points, "%s : %s" %(name, p))
 
             to_run = ""
             cur_path = ""
             answer_file = ""
-            if "Mode" in c_p and c_p["Mode"] == "DIRECT":
-                cur_path = os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "resources", c_p["File"])
-                answer_file =os.path.join("asgt0%i-ready" %(assign_num), name, "%s-%s" %(name, c_p["Name"]))
-            else:
-                if "File" in c_p:
-                    to_run = c_p["File"]
-                else:
-                    to_run = c_p["Name"][:c_p["Name"].find("_")]
-                cur_path = os.path.join("asgt0%i-ready" %(assign_num), name, "%s-%s.a52" %(name, to_run))
-                answer_file = os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "%s" %(c_p["Name"]))
-
+            cur_path = os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "resources", f["File"])
+            answer_file =os.path.join("asgt0%i-ready" %(assign_num), name, "%s-%s" %(name, f["Name"]))
+           
             output = cmd_utils.run_a52(cur_path, answer_file, assign_num=assign_num)
 
-            result, did_pass = grading_utils.parse_a52(c_p["Name"], output, c_p["Answer"])
+            result, did_pass = grading_utils.parse_a52(f["Name"], output, f["Answer"])
 
             deduction = 0
             if not did_pass:
-                deduction = float(c_p["Points"])
-            summary_list.append((p, c_p["Name"], deduction))
+                deduction = float(f["Points"])
+            summary_list.append((p, f["Name"], deduction))
 
             output_string = output_string + result + "\n\n"
+        elif m is "a52_direct":
+            cur_progress = cur_progress + 1
+            cmd_utils.progress(cur_progress, total_points, "%s : %s" %(name, p))
 
+            to_run = ""
+            cur_path = ""
+            answer_file = ""
+            
+            if "File" in f:
+                to_run = f["File"]
+            else:
+                to_run = f["Name"][:f["Name"].find("_")]
+            cur_path = os.path.join("asgt0%i-ready" %(assign_num), name, "%s-%s.a52" %(name, to_run))
+            answer_file = os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "%s" %(f["Name"]))
+
+            output = cmd_utils.run_a52(cur_path, answer_file, assign_num=assign_num)
+
+            result, did_pass = grading_utils.parse_a52(f["Name"], output, f["Answer"])
+
+            deduction = 0
+            if not did_pass:
+                deduction = float(f["Points"])
+            summary_list.append((p, f["Name"], deduction))
+
+            output_string = output_string + result + "\n\n"
+        elif m is "sml_a52":
+            cur_progress = cur_progress + 1
+            cmd_utils.progress(cur_progress, total_points, "%s : %s" %(name, p))
+
+            to_run = ""
+            cur_path = ""
+            answer_file = ""
+            
+            cur_f = "asgt0%i_%s.sml" %(assign_num, f)
+
+            output = cmd_utils.run_sml_a52(cur_f, assign_num=assign_num)
+
+            result, did_pass = grading_utils.parse_a52(f["Name"], output, f["Answer"])
+
+            deduction = 0
+            if not did_pass:
+                deduction = float(f["Points"])
+            summary_list.append((p, f["Name"], deduction))
+
+            output_string = output_string + result + "\n\n"
+        else:
+            print("Malformed config - illegal mode")
+            sys.exit(0)
 
 
     #Format the summary and rest of it
