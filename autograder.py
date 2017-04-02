@@ -162,11 +162,13 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
     problem_config = []
     for i in range(num_problems):
         cur_num = i + 1
-        if "Problems" in config[str(cur_num)]:
-            for sub_problem in config[str(cur_num)]["Problems"].split(","):
+        cur_str = str(cur_num)
+        if "Problems" in config[cur_str]:
+            for sub_problem in config[cur_str]["Problems"].split(","):
                 problem_config.append(("%i%s" %(cur_num, sub_problem), config["%i%s" %(cur_num, sub_problem)]))
         else:
-            problem_config.append((str(cur_num), config[str(cur_num)]))
+            if not "Mode" in config[cur_str] or config[cur_str]["Mode"] == "sml":
+                problem_config.append((cur_str, config[cur_str]))
 
 
 
@@ -189,7 +191,8 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
     for (name, config_problem) in problem_config:
         problem_number = name
         problem_name = config_problem["Name"]
-        problem_requirements = grading_utils.get_requirements(config_problem["requirements"], assign_num)
+        print(name)
+        problem_requirements = grading_utils.get_requirements(config_problem["Requirements"], assign_num)
         problem_flag = grading_utils.get_flag(assign_num, problem_number)
 
         pre_string = "\n\n(*=====================Grader Code=====================*)\n"
@@ -371,7 +374,7 @@ Submission Date:
 
     #Run each of the files in student_name/grading
 
-    if config["Assignment"]["Mode"] == "sml" or config["Assignment"]["Mode"] == "":
+    if not "Mode" in config["Assignment"] or config["Assignment"]["Mode"] == "sml" or config["Assignment"]["Mode"] == "":
         for p, f in problems:
             f = "asgt0%i_%s.sml" %(assign_num, f)
             #Adjust progress bar
@@ -416,7 +419,7 @@ Submission Date:
             #Append to thel ist of deductions
             summary_list.append((p, deduction))
             output_string = output_string + problem_string
-    elif config["Assignment"]["Mode"] == "a52":
+    elif "Mode" in config["Assignment"] and  config["Assignment"]["Mode"] == "a52":
         for p, c_p in problems:
             cur_progress = cur_progress + 1
             cmd_utils.progress(cur_progress, total_points, "%s : %s" %(name, p))
@@ -453,7 +456,7 @@ Submission Date:
     total_deduction = 0
 
     #Print the deductions
-    if config["Assignment"]["Mode"] == "a52":
+    if "Mode" in config["Assignment"] and config["Assignment"]["Mode"] == "a52":
         output_string = output_string + ("Deductions:\n\nProblem | Points Given\n" +
                     "\n".join([n.ljust(16) + "|" + (str(float(config[p]["Points"]) - d) + "/" + config[p]["Points"]).rjust(24) for (p,n,d) in summary_list]))
         total_deduction = sum([c for (a,b,c) in summary_list])

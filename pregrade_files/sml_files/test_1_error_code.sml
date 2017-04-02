@@ -3,7 +3,7 @@ fun test_1_error_grammar information help function arg1 =
         fun error_help func arg = 
             let 
                 val res = func arg <> func arg
-                    handle CodeException msg => (print (msg); true)
+                    handle CodeException msg => (print ("Printed Error: " ^ msg ^ "\n"); true)
             in
                 res
         end

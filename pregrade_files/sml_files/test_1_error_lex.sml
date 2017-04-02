@@ -3,7 +3,7 @@ fun test_1_error_lex information help function arg1 =
         fun error_help func arg = 
             let 
                 val res = func arg <> func arg
-                    handle LexicalException msg => (print (msg); true)
+                    handle LexicalException msg => (print ("Printed Error: " ^ msg ^ "\n"); true)
             in
                 res
         end
