@@ -393,7 +393,7 @@ Submission Date:
 
     #Problem mode overrites assignment mode
 
-   for p, m, f in problems:
+    for p, m, f in problems:
         if m == "sml":
             c_f = "asgt0%i_%s.sml" %(assign_num, f["Name"])
            #Adjust progress bar
@@ -514,6 +514,12 @@ Submission Date:
                 output_string = output_string + result + "\n\n"
             else:
                 output_string = output_string + "Missing file - " + cur_f + "\n"
+
+        elif m == "visual":
+            with open(student_file, 'r') as f:
+                output_string = output_string + "%s : %s/%s\n\n===========%s\n===========\n\n" %(
+                                f["Name"], f["Points"], f["Points"], grading_utils.split_string(f.read(), grading_utils.get_flag(assign_num, p, f)))
+
 
         else:
             print("Malformed config - illegal mode |%s|" %(m))
