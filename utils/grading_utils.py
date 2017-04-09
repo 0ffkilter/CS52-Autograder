@@ -29,6 +29,48 @@ def get_flag(assign_num, p, config):
     return flag
 
 
+def parse_problems(config):
+    """
+    Returns a list of triples of problems
+    [(problem_name, problem_type, data)]
+
+    
+    """
+
+    return_list = []
+    num_problems = config["Assignment"]["NumProblems"]
+
+    assign_mode="sml"
+    if "Mode" in config["Assignment"]:
+        assign_mode = config["Assignment"]["Mode"]
+
+
+    #Mode Priorities:
+    #Problem > Parent Problem > Assignment
+    for i in range(num_problems):
+        cur_mode = assign_mode
+        cur_num = i + 1
+        cur_str = str(cur_num)
+        if "Mode" in config[cur_str]:
+            cur_mode = config[cur_str]["Mode"]
+        if "Problems" in config[cur_str]:
+            for sub_problem in config[cur_str]["Problems"].split(","):
+                cur_prob = "%i%s" %(cur_num, sub_problem)
+                if "Mode" in config[cur_prob]:
+                    cur_mode = config[cur_prob]["Mode"]
+                return_list.append(
+                            "%i%s" %(cur_num, sub_problem),
+                            cur_mode
+                            config["%i%s" %(cur_num, sub_problem)])    
+        else:
+            return_list.append(
+                        cur_str,
+                        cur_mode,
+                        config[cur_str]
+                        )
+
+
+
 def get_requirements(requirements, assign_num):
     """Gets the requirements string from the path"
 
