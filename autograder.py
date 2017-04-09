@@ -152,11 +152,7 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
     num_problems = int(config["Assignment"]["NumProblems"])
     submit_files = config["Assignment"]["Files"].split(",")
 
-
-
     #Gather the files
-
-
 
     #Get the list of problems from the config file and get the appropriate information
     problem_config = []
@@ -169,9 +165,6 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
         else:
             if not "Mode" in config[cur_str] or config[cur_str]["Mode"] == "sml":
                 problem_config.append((cur_str, config[cur_str]))
-
-
-
 
     # Generate sml subfiles
 
@@ -196,10 +189,10 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
     for (name, config_problem) in problem_config:
         problem_number = name
         problem_name = config_problem["Name"]
-        print(name)
         problem_requirements = grading_utils.get_requirements(config_problem["Requirements"], assign_num)
-        problem_flag = grading_utils.get_flag(assign_num, problem_number)
 
+        problem_flag = grading_utils.get_flag(assign_num, problem_number, config_problem)
+        print(name, problem_flag)
         pre_string = "\n\n(*=====================Grader Code=====================*)\n"
 
         for r in problem_requirements:
@@ -224,7 +217,7 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
         if "Mode" in config_problem:
             cur_mode = config_problem["Mode"]
 
-        grading_file_list.append((problem_number, mode, config_problem))
+        grading_file_list.append((problem_number, cur_mode, config_problem))
 
         problem_list.append((
                             problem_number,
@@ -386,14 +379,14 @@ Submission Date:
 
     #Run each of the files in student_name/grading
     for p, m, f in problems:
-        if m is "sml":
-            f = "asgt0%i_%s.sml" %(assign_num, f["Name"])
+        if m == "sml":
+            c_f = "asgt0%i_%s.sml" %(assign_num, f["Name"])
             #Adjust progress bar
             cur_progress = cur_progress + 1
             cmd_utils.progress(cur_progress, total_points, "%s : %s" %(name, p))
 
             #Get the path offile we're going to run and run it
-            cur_path = os.path.join("asgt0%i-ready" %(assign_num), name, "grading", f)
+            cur_path = os.path.join("asgt0%i-ready" %(assign_num), name, "grading", c_f)
             output = cmd_utils.run_file(cur_path)
 
             #Parse the output
@@ -428,9 +421,9 @@ Submission Date:
                 deduction = min(num_points-0.5, deduction)
 
             #Append to thel ist of deductions
-            summary_list.append((p, deduction))
+            summary_list.append((p, f["Name"], deduction))
             output_string = output_string + problem_string
-        elif m is "a52":
+        elif m == "a52":
             cur_progress = cur_progress + 1
             cmd_utils.progress(cur_progress, total_points, "%s : %s" %(name, p))
 
@@ -439,7 +432,7 @@ Submission Date:
             answer_file = ""
             cur_path = os.path.join("CS52-GradingScripts", "asgt0%i" %(assign_num), "resources", f["File"])
             answer_file =os.path.join("asgt0%i-ready" %(assign_num), name, "%s-%s" %(name, f["Name"]))
-           
+
             output = cmd_utils.run_a52(cur_path, answer_file, assign_num=assign_num)
 
             result, did_pass = grading_utils.parse_a52(f["Name"], output, f["Answer"])
@@ -450,14 +443,14 @@ Submission Date:
             summary_list.append((p, f["Name"], deduction))
 
             output_string = output_string + result + "\n\n"
-        elif m is "a52_direct":
+        elif m == "a52_direct":
             cur_progress = cur_progress + 1
             cmd_utils.progress(cur_progress, total_points, "%s : %s" %(name, p))
 
             to_run = ""
             cur_path = ""
             answer_file = ""
-            
+
             if "File" in f:
                 to_run = f["File"]
             else:
@@ -475,28 +468,40 @@ Submission Date:
             summary_list.append((p, f["Name"], deduction))
 
             output_string = output_string + result + "\n\n"
-        elif m is "sml_a52":
+
+        elif m == "sml_a52":
             cur_progress = cur_progress + 1
             cmd_utils.progress(cur_progress, total_points, "%s : %s" %(name, p))
 
             to_run = ""
             cur_path = ""
             answer_file = ""
-            
-            cur_f = "asgt0%i_%s.sml" %(assign_num, f)
 
-            output = cmd_utils.run_sml_a52(cur_f, assign_num=assign_num)
+            cur_f = "asgt0%i_%s.sml" %(assign_num, f["Name"])
 
-            result, did_pass = grading_utils.parse_a52(f["Name"], output, f["Answer"])
+            cur_path = os.path.join("asgt0%i-ready" %(assign_num), name, "grading", cur_f)
+            print(cur_path)
+            if os.path.exists(cur_path):
+                output = ""
+                result = ""
+                did_pass = False
+                with open(cur_path, 'r') as c_file:
+                    content = c_file.read()
+                    if "fun encode " in content:
+                        output = cmd_utils.run_sml_a52(cur_path, assign_num=assign_num)
+                        result, did_pass = grading_utils.parse_a52(f["Name"], output, f["Answer"])
 
-            deduction = 0
-            if not did_pass:
-                deduction = float(f["Points"])
-            summary_list.append((p, f["Name"], deduction))
+                deduction = 0
+                if not did_pass:
+                    deduction = float(f["Points"])
+                summary_list.append((p, f["Name"], deduction))
 
-            output_string = output_string + result + "\n\n"
+                output_string = output_string + result + "\n\n"
+            else:
+                output_string = output_string + "Missing file - " + cur_f + "\n"
+
         else:
-            print("Malformed config - illegal mode")
+            print("Malformed config - illegal mode |%s|" %(m))
             sys.exit(0)
 
 
@@ -505,14 +510,14 @@ Submission Date:
     total_deduction = 0
 
     #Print the deductions
-    if "Mode" in config["Assignment"] and config["Assignment"]["Mode"] == "a52":
-        output_string = output_string + ("Deductions:\n\nProblem | Points Given\n" +
-                    "\n".join([n.ljust(16) + "|" + (str(float(config[p]["Points"]) - d) + "/" + config[p]["Points"]).rjust(24) for (p,n,d) in summary_list]))
-        total_deduction = sum([c for (a,b,c) in summary_list])
-    else:
-        total_deduction = sum([b for (a,b) in summary_list])
-        output_string = output_string + ("Deductions:\nProblem | Points Given\n" +
-                    "\n".join([p.ljust(8) + "|" + (str(float(config[p]["Points"]) - d) + "/" + config[p]["Points"]).rjust(10) for (p,d) in summary_list]))
+    #if "Mode" in config["Assignment"] and config["Assignment"]["Mode"] == "a52":
+    output_string = output_string + ("Deductions:\n\nProblem | Points Given\n" +
+                "\n".join([n.ljust(16) + "|" + (str(float(config[p]["Points"]) - d) + "/" + config[p]["Points"]).rjust(24) for (p,n,d) in summary_list]))
+    total_deduction = sum([c for (a,b,c) in summary_list])
+    #else:
+    #    total_deduction = sum([b for (a,b) in summary_list])
+    #    output_string = output_string + ("Deductions:\nProblem | Points Given\n" +
+    #                "\n".join([p.ljust(8) + "|" + (str(float(config[p]["Points"]) - d) + "/" + config[p]["Points"]).rjust(10) for (p,d) in summary_list]))
 
     #Format check the assignment
     (too_long, contains_tab, comments, linecount) = grading_utils.format_check(student_file)

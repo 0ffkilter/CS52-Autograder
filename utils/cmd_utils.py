@@ -131,7 +131,7 @@ def run_sml_a52(sml_file, path_to_52=None, assign_num=5, timeout=5):
     if path_to_52 == None or not os.path.exists(path_to_52):
         path_to_52 = os.path.join("grading_scripts", "asgt0%i" %assign_num, "resources",  "cs52-machine.jar")
 
-    cmd = "sml %s | java -jar %s -p -f" %(sml_file, path_to_52)
+    cmd = "timeout %i sml %s | java -jar %s -p -f" %(timeout, sml_file, path_to_52)
     start = timer()
     with Popen(cmd, shell=True, stdout=PIPE, preexec_fn=os.setsid) as process:
         try:

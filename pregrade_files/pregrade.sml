@@ -26,6 +26,10 @@ fun test_3 information help function arg1 arg2 arg3 retval = if function arg1 ar
 fun list_compare_exact [] [] = true | list_compare_exact [] _ = false | list_compare_exact _ [] = false | list_compare_exact (x::xs) (y::ys) = (x = y) andalso (list_compare_exact xs ys);
 (*** list_compare_exact $-list_compare_exact ***)
 
+(*** print_list $+print_list ***)
+fun printList nil = () | printList (s::ss) = (print (s ^ "\n"); printList ss);
+(*** print_list $-print_list ***)
+
 (*** test_1_exact $+test_1_exact ***)
 fun test_1_exact information help function arg1 retval = if list_compare_exact (function arg1) (retval) = true then print(information ^ ":\t PASS\n") else print (information ^ ":\t FAIL\n\t" ^ help ^ "\n");
 (*** test_1_exact $-test_1_exact ***)

@@ -8,8 +8,9 @@ January, 2017
 import os
 import re
 
-def get_flag(assign_num, p):
-
+def get_flag(assign_num, p, config):
+    if "Flag" in config:
+        return "0%i_%s" %(assign_num, config["Flag"])
     flag = ""
     if len(p) > 1:
         if p[-1].isalpha():
@@ -45,6 +46,7 @@ def get_requirements(requirements, assign_num):
             if os.path.exists(cur_path):
                 return_list.append(cur_path)
         else:
+            """
             req_parts = req.split("_")
             if req_parts[-1] == "exact":
                 return_list.append("list_compare_exact")
@@ -53,6 +55,7 @@ def get_requirements(requirements, assign_num):
             elif req_parts[-1] == "knuth":
                 return_list.append("list_compare")
                 return_list.append("list_compare_exact")
+            """
             return_list.append(req)
     return return_list
 
