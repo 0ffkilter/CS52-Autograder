@@ -60,7 +60,7 @@ def parse_problems(config):
                     cur_mode = config[cur_prob]["Mode"]
                 return_list.append(
                             "%i%s" %(cur_num, sub_problem),
-                            cur_mode
+                            cur_mode,
                             config["%i%s" %(cur_num, sub_problem)])    
         else:
             return_list.append(
