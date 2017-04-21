@@ -161,21 +161,29 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
 
     #Get the list of problems from the config file and get the appropriate information
     problem_config = []
+    grading_file_list = []
     for i in range(num_problems):
         cur_num = i + 1
         cur_str = str(cur_num)
         if "Problems" in config[cur_str]:
             for sub_problem in config[cur_str]["Problems"].split(","):
-                problem_config.append(("%i%s" %(cur_num, sub_problem), config["%i%s" %(cur_num, sub_problem)]))
+                cur_problem = cur_str + sub_problem
+                if not "Mode" in config[cur_problem] or config[cur_problem]["Mode"] == "sml":
+                    problem_config.append((cur_problem, config[cur_problem]))
+                    grading_file_list.append((cur_problem, "sml", config[cur_problem]))
+                else:
+                    grading_file_list.append((cur_problem, config[cur_problem]["Mode"], config[cur_problem]))
         else:
             if not "Mode" in config[cur_str] or config[cur_str]["Mode"] == "sml":
                 problem_config.append((cur_str, config[cur_str]))
+                grading_file_list.append((cur_str, "sml", config[cur_str]))
+            else:
+                grading_file_list.append((cur_str, config[cur_str]["Mode"], config[cur_str]))
 
     # Generate sml subfiles
 
     # Generate list of strings for each problem
 
-    grading_file_list = []
     problem_strings = []
     #[(pre_string, post_string)]
 
@@ -218,11 +226,6 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
             pre_string = pre_string + f_grade.read()
 
         cur_mode = assignment_mode
-
-        if "Mode" in config_problem:
-            cur_mode = config_problem["Mode"]
-
-        grading_file_list.append((problem_number, cur_mode, config_problem))
 
         problem_list.append((
                             problem_number,
@@ -516,10 +519,27 @@ Submission Date:
                 output_string = output_string + "Missing file - " + cur_f + "\n"
 
         elif m == "visual":
-            with open(student_file, 'r') as f:
-                output_string = output_string + "%s : %s/%s\n\n===========%s\n===========\n\n" %(
-                                f["Name"], f["Points"], f["Points"], grading_utils.split_string(f.read(), grading_utils.get_flag(assign_num, p, f)))
+            try:
+                with open(student_file, 'r') as new_file:
+                    flag = grading_utils.get_flag(assign_num, p, f)
+                    print(flag)
+                    content = new_file.read().split("\n")
+                    cur_line = 0
+                    for i in range(len(content)):
+                        if flag in content[i]:
+                            cur_line = i + 1
+                            break
+                    if cur_line != 0:
+                        output_string = output_string + "Problem %s\n%s : ?/%s\n\nProblem must be checked manually, see line number %i\n\n" %(
+                                                p, f["Name"], f["Points"], cur_line)
+                    else:
+                        output_string = output_string + "Problem %s\n%s : ?/%s\n\nProblem must be checked manually, could not find flag - check assignment\n\n" %(
+                                                p, f["Name"], f["Points"])
+            except:
+                output_string = output_string + "Problem %s\n%s : 0/%s\n\nFile does not exist \n" %(
+                                            p, f["Name"], f["Points"])
 
+            summary_list.append((p, f["Name"], 0))
 
         else:
             print("Malformed config - illegal mode |%s|" %(m))
@@ -532,8 +552,8 @@ Submission Date:
 
     #Print the deductions
     #if "Mode" in config["Assignment"] and config["Assignment"]["Mode"] == "a52":
-    output_string = output_string + ("Deductions:\n\nProblem | Points Given\n" +
-                "\n".join([n.ljust(16) + "|" + (str(float(config[p]["Points"]) - d) + "/" + config[p]["Points"]).rjust(24) for (p,n,d) in summary_list]))
+    output_string = output_string + ("Points Summary:\n\nProblem | Points Given\n" +
+                "\n".join([n.ljust(24) + "|" + (str(float(config[p]["Points"]) - d) + "/" + config[p]["Points"]).rjust(24) for (p,n,d) in summary_list]))
     total_deduction = sum([c for (a,b,c) in summary_list])
     #else:
     #    total_deduction = sum([b for (a,b) in summary_list])

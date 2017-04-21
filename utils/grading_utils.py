@@ -34,7 +34,7 @@ def parse_problems(config):
     Returns a list of triples of problems
     [(problem_name, problem_type, data)]
 
-    
+
     """
 
     return_list = []
@@ -60,8 +60,8 @@ def parse_problems(config):
                     cur_mode = config[cur_prob]["Mode"]
                 return_list.append(
                             "%i%s" %(cur_num, sub_problem),
-                            cur_mode
-                            config["%i%s" %(cur_num, sub_problem)])    
+                            cur_mode,
+                            config["%i%s" %(cur_num, sub_problem)])
         else:
             return_list.append(
                         cur_str,
