@@ -156,7 +156,7 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
     files_to_copy = []
     if "Resources" in config["Assignment"]:
         files_to_copy = config["Assignment"]["Resources"].split(",")
-        files_to_copy = [f.strip() for f in files_to_copy]
+        files_to_copy = [os.path.join("grading_scripts", "asgt0%i" %(assign_num), "resources", f.strip()) for f in files_to_copy]
     #Gather the files
 
     #Get the list of problems from the config file and get the appropriate information
@@ -243,7 +243,13 @@ def generate_subfiles(assign_num, overwrite=False, students=STUDENT_LIST):
     cur_progress = 1
     total_progress = len(students)
     for (student, email, section) in students:
+
+
         cmd_utils.progress(cur_progress, total_progress, student)
+
+        for f_copy in files_to_copy:
+            shutil.copy(f_copy, os.path.join(
+                "asgt0%i-ready" % (assign_num), student))
         # problems are 1 indexed
 
         # For each of the problem strings
