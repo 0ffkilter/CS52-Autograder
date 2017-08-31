@@ -1,13 +1,16 @@
 import http.client
 import subprocess
-import os
+from os import path
+from typing import Optional, Text, List
 
-DEFAULT_SERVER_LOCATION = "C:/Users/Matt/Dev/CS52-Autograder/serve-sml"
-DEFAULT_FILE_ORDER = ["buffer", "util", "http", "server", "assert", "grading_lib", "main"]
+
+DEFAULT_SERVER_LOCATION = path.abspath("C:/Users/Matt/Dev/CS52-Autograder/serve-sml")
+DEFAULT_FILE_ORDER = [path.join(DEFAULT_SERVER_LOCATION, f'{p}.sml').replace("\\", "/")
+                 for p in ["buffer", "util", "http", "server", "assert", "grading_lib", "main"]]
 
 class ServerHandler:
 
-    def __init__(self, server_location:str=None, files:list=None):
+    def __init__(self, server_location: Optional[str] = None, files: Optional[List[str]] = None):
         """Make the Server object
 
         Args:
@@ -15,20 +18,13 @@ class ServerHandler:
         files:  the files (and order) that they should be run in
         """
 
-        if server_location is not None:
-            self.server_location = server_location
-        else:
-            self.server_location = DEFAULT_SERVER_LOCATION
-
-        if files is not None:
-            self.files = files
-        else:
-            self.files = DEFAULT_SERVER_LOCATION
+        self.server_location = server_location or DEFAULT_SERVER_LOCATION
+        self.files = files or DEFAULT_FILE_ORDER
 
         self.process = None
         self.has_started = False
 
-    def get_response(self, get_string:str) -> http.client.HTTPResponse:
+    def get_response(self, get_string: Text) -> http.client.HTTPResponse:
         """Get the response from a GET request
 
         The server only supports GET, so that's why it's hardcoded
@@ -42,18 +38,16 @@ class ServerHandler:
         """ Starts the process (if not already running), or returns the current
         """
 
-        if not self.has_started:
-            sml_string = " ".join(["use \"%s.sml\";" %(self.server_location + "/" + f) for f in self.files])
-            self.process = subprocess.Popen("echo %s | sml" %(sml_string), shell=True)
-            self.has_started = True
+        if self.has_started:
             return self.process
-        else:
-            return self.process
+        sml_string = " ".join([f'use \"{f}\";' for f in self.files])
+        self.process = subprocess.Popen(f"echo {sml_string} | sml", shell=True)
+        self.has_started = True
+        return self.process
 
-    def check_response(self, resp:http.client.HTTPResponse) -> bool:
+    def check_response(self, resp: http.client.HTTPResponse) -> bool:
         """Returns True if the response is 200 status and has 'Ok'"""
-
-        return resp.status == 200 and resp.reason == "Ok"
+        return resp.status == 200
 
     def check_status(self) -> bool:
         """Returns True if the server is up, False otherwise"""
@@ -61,7 +55,7 @@ class ServerHandler:
         resp = self.get_response("status")
         return self.check_response(resp)
 
-    def run_file(self, filename:str) -> bool:
+    def run_file(self, filename: Text) -> bool:
         """Run a file on the server
 
         Args:
@@ -71,7 +65,7 @@ class ServerHandler:
         resp = self.get_response("file/" + filename)
         return self.check_response(resp)
 
-    def get_results(self, problem_number:str, sub_problem_number:str=None):
+    def get_results(self, problem_number: Text, sub_problem_number: Text = None):
         """Get the results of tests back from the server
         
         Args:
@@ -80,14 +74,13 @@ class ServerHandler:
         """
 
         resp = None
-        if sub_problem_number == None:
-            resp = self.get_response("results/%s" %(problem_number))
+        if sub_problem_number is None:
+            resp = self.get_response(f"results/{problem_number}")
         else:
-            resp = self.get_response("results/%s/%s" %(problem_number, sub_problem_number))
+            resp = self.get_response(f"results/{problem_number}/{sub_problem_number}")
         if self.check_response(resp):
             return resp.read()
-        else:
-            return None
+        return None
 
     def kill(self) -> bool:
         """Kills the server.  Returns true if server is dead, false otherwise
@@ -113,13 +106,3 @@ class ServerHandler:
             self.has_started = False
             return False
         return self.check_status()
-
-if __name__ == '__main__':
-    """Sample testing"""
-    server = ServerHandler()
-    print(server.start())
-    print(server.run_file("C:/Users/Matt/Dev/CS52-Autograder/serve-sml/example_sml/sample_assignment.sml"))
-    print(server.run_file("C:/Users/Matt/Dev/CS52-Autograder/serve-sml/example_sml/simple_test.sml"))
-    print(server.run_file("C:/Users/Matt/Dev/CS52-Autograder/serve-sml/example_sml/simple_test_2.sml"))
-    print(server.get_results("1"))
-    print(server.kill())
