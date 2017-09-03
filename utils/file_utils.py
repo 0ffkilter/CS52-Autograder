@@ -5,6 +5,7 @@ Matthew Gee
 January, 2017
 """
 
+from collections import namedtuple
 import configparser
 import contextlib
 import datetime
@@ -13,6 +14,8 @@ import os
 import re
 import shutil
 import zipfile
+
+import tqdm
 
 from grading_scripts.student_list import STUDENT_LIST
 from utils import cmd_utils
@@ -24,6 +27,10 @@ class DirectoryNotFound(OSError):
 
 class StudentNotFound(LookupError):
     pass
+
+
+StudentPresentMissing = namedtuple('StudentPresentMissing', 'student present missing')
+DirectoryFilenameTimestamp = namedtuple('DirectoryFilenameTimestamp', 'directory filename timestamp')
 
 
 def zipdir(path, ziph):
@@ -171,7 +178,7 @@ def get_files_present(file_list):
     """
     return_list = []
     for (directory, files) in file_list:
-        for f in files["present"]:
+        for f in files['present']:
             return_list.append(f)
     return return_list
 
@@ -201,6 +208,18 @@ def refresh_file(assign_num, student_name, student_list=STUDENT_LIST):
     return move_files(files, src_dir, tgt_dir, [student_name])
 
 
+def validate_source_dir_exists(source_dir):
+    if not os.path.exists(source_dir):
+        if re.match('(asgt0)([1-9]{1})(-submissions)', source_dir) is None:
+            raise FileNotFoundError("Source Destination doesn't exist")
+        raise FileNotFoundError('No submission folder found for given assignment')
+
+
+def ensure_destination_dir(target_dir):
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+
+
 def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT_LIST):
     """ Moves students' files from source to target dir
 
@@ -210,65 +229,50 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
     stdt_list:      list of students
     """
 
-    if not os.path.exists(source_dir):
-        if re.match('(asgt0)([1-9]{1})(-submissions)', source_dir) is None:
-            raise FileNotFoundError("Source Destination doesn't exist")
-        raise FileNotFoundError('No submission folder found for given assignment')
-
-    if not os.path.exists(target_dir):
-        os.makedirs(target_dir)
+    validate_source_dir_exists(source_dir)
+    ensure_destination_dir(target_dir)
 
     return_list = []
 
-    print("Gathering Files")
-
-    cur_student = 1
-    total_students = len(stdt_list)
-
-    for (student, email, section) in stdt_list:
-        cmd_utils.progress(cur_student, total_students, email)
-        cur_student += 1
-        possibleFiles = glob.glob(os.path.join(source_dir, "*" + anyCase(email) + "*"))
-        if not len(possibleFiles):
-            return_list.append((student, [], files))
+    for (student, email, section) in tqdm(stdt_list, desc='gathering files'):
+        possible_files = glob.glob(os.path.join(source_dir, '*' + anyCase(email) + '*'))
+        if not len(possible_files):
+            return_list.append(StudentPresentMissing(student, [], files))
         file_list = []
         # possible matches
-        for result in possibleFiles:
+        for result in possible_files:
+            if '2016' not in result and '2017' not in result:
+                continue
+            if 'latest' in result or 'ontime' in result:
+                continue
+            submission_time = datetime.datetime.strptime(
+                result,
+                os.path.join(source_dir, '%Y-%m-%dT%H+%M+%S+%f' + result[result.find('Z'):])
+            )
 
-            if "2016" in result or "2017" in result:
-                if 'latest' not in result and 'ontime' not in result:
-                    # strip the time
-                    time = datetime.datetime.strptime(
-                        result,
-                        os.path.join(source_dir, "%Y-%m-%dT%H+%M+%S+%f" + result[result.find("Z"):])
-                    )
+            for (dirpath, dirnames, filenames) in os.walk(result):
+                for f in filenames:
+                    with contextlib.suppress(Exception):
+                        new_file_list = []
+                        found = False
+                        # for each of the files we've found for for this student
+                        for (cur_path, file_name, timestamp) in file_list:
+                            # if it matches the name
+                            if file_name == f:
+                                # if the new one is older keep the previous one
+                                if submission_time < timestamp:
+                                    new_file_list.append(DirectoryFilenameTimestamp(cur_path, file_name, timestamp))
+                                else:
+                                    # keep the one we just found
+                                    new_file_list.append(DirectoryFilenameTimestamp(dirpath, f, submission_time))
+                                found = True
+                                # if it doesn't match, keep the old no matter what
+                            else:
+                                new_file_list.append(DirectoryFilenameTimestamp(cur_path, file_name, timestamp))
+                        if not found:
+                            new_file_list.append(DirectoryFilenameTimestamp(dirpath, f, submission_time))
 
-                    # Now, for each of the files in there
-                    for (dirpath, dirnames, filenames) in os.walk(result):
-                        for f in filenames:
-                            # if it's one of the files we're looking for
-                            with contextlib.suppress(Exception):
-                                # get the student id
-                                new_file_list = []
-                                found = False
-                                # for each of the files we've found for for this student
-                                for (cur_path, file_name, timestamp) in file_list:
-                                    # if it matches the name
-                                    if file_name == f:
-                                        # if the new one is older keep the previous one
-                                        if time < timestamp:
-                                            new_file_list.append((cur_path, file_name, timestamp))
-                                        else:
-                                            # keep the one we just found
-                                            new_file_list.append((dirpath, f, time))
-                                        found = True
-                                        # if it doesn't match, keep the old no matter what
-                                    else:
-                                        new_file_list.append((cur_path, file_name, timestamp))
-                                if not found:
-                                    new_file_list.append((dirpath, f, time))
-
-                                file_list = new_file_list
+                        file_list = new_file_list
 
         present_list = []
         missing_list = []
@@ -279,7 +283,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
             os.makedirs(file_tgt_dir)
 
         # For each file copy it over
-        with open(os.path.join(file_tgt_dir, ".timestamps.txt"), 'w+') as f:
+        with open(os.path.join(file_tgt_dir, '.timestamps.txt'), 'w+') as f:
             for (d, n, t) in file_list:
                 # Adjust for PST
                 time = t - datetime.timedelta(hours=8)
@@ -301,6 +305,6 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
                 missing_list.append(f)
 
         # Format
-        return_list.append((student, present_list, missing_list))
+        return_list.append(StudentPresentMissing(student, present_list, missing_list))
 
     return return_list
