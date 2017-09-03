@@ -228,7 +228,6 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
     for (student, email, section) in stdt_list:
         cmd_utils.progress(cur_student, total_students, email)
         cur_student += 1
-        # print("%s : %s" %(student, email))
         possibleFiles = glob.glob(os.path.join(source_dir, "*" + anyCase(email) + "*"))
         if not len(possibleFiles):
             return_list.append((student, [], files))
@@ -287,7 +286,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
                 file_src_name = os.path.join(d, n)
                 file_tgt_name = os.path.join(file_tgt_dir, f'{student}-{n}')
                 present_list.append(n)
-                f.write("%s,%s\n" % (n, datetime.datetime.strftime(time, "%Y-%m-%d %H:%M:%S")))
+                f.write(f'{n},{datetime.datetime.strftime(time, "%Y-%m-%d %H:%M:%S")}\n')
                 # If the overwrite flag isn't True, check before copy
                 if not overwrite:
                     if not os.path.exists(file_tgt_name):
@@ -298,11 +297,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
 
         # Get all the missing files
         for f in files:
-            found = False
-            for (d, n, t) in file_list:
-                if n == f:
-                    found = True
-            if not found:
+            if not any(n == f for (d, n, t) in file_list):
                 missing_list.append(f)
 
         # Format
