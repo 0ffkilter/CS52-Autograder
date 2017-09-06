@@ -1,8 +1,9 @@
 from assignment import Assignment
-from typing import List, Text
+from typing import Text, Optional
 from server_handler import ServerHandler
 from os import path, mkdir
 from collections import OrderedDict
+
 
 class Student:
 
@@ -12,7 +13,7 @@ class Student:
         self.dir = student_dir
         self.name = name
         self.port = hash(name) % (10 ** 8)
-        self.server = ServerHandler(port)
+        self.server = ServerHandler(self.port)
         self.results = OrderedDict()
         self.problems = {}
 
@@ -22,17 +23,20 @@ class Student:
         grading_path = path.join(self.dir, "grading")
         if not path.exists(grading_path):
             mkdir(grading_path)
-        fname = f"{self.name}-{filename}"
+        # fname = f"{self.name}-{filename}"
 
         with open(filename, 'r') as f:
             file_contents = f.read()
 
-        for k,v in self.assignment.problems.items():
+        for k, v in self.assignment.problems.items():
             if v.mode is "sml":
-                problem_path = path.join(grading_path, f"asgt0{self.assignment.assignment_number}_{k}.sml")
+                problem_path = path.join(
+                    grading_path,
+                    f"asgt0{self.assignment.assignment_number}_{k}.sml"
+                )
                 with open(grading_path, 'w+') as f:
-                    f.write(split_string(file_contents, v.flag))
-                    self.problems[k] = problem_path 
+                    f.write(self.split_string(file_contents, v.flag))
+                    self.problems[k] = problem_path
 
     def start(self):
         if not self.is_started:
@@ -53,21 +57,26 @@ class Student:
         results = test_results.split("|")
         for r in results:
             sections = r.split("/")
-            problem = sections[0] + (sections[1] if sections[1] is not " " else "")
-            if not problem in self.results:
+            problem = sections[0] +  \
+                      (sections[1] if sections[1] is not " " else "")
+            if problem not in self.results:
                 self.results[problem] = [None] * 10
             self.results[problem][int(sections[2])] = int(sections[3])
 
-    def run_problem(self, problem_number: Optional[Text] = None, file: Optional[Text] = None):
+    def run_problem(self, problem_number: Optional[Text] = None,
+                    file: Optional[Text] = None):
         """Runs the file associated with the problem number
-        
-        If nothing is specified, runs the next problem after the last one previously run
-        """   
+        If nothing is specified, runs the next problem
+                after the last one previously run
+        """
         current_problem = problem_number or self.current_problem
         self.current_problem = self.assignment.next_problem(current_problem)
         self.server.run_file(self.problems[current_problem])
 
         if current_problem[-1].isalpha():
-            parse_test_results(self.server.get_results(current_problem[:-1], current_problem[-1]))
+            self.parse_test_results(
+                self.server.get_results(
+                    current_problem[:-1], current_problem[-1])
+            )
         else:
-            parse_test_results(self.server.get_results(current_problem))
+            self.parse_test_results(self.server.get_results(current_problem))

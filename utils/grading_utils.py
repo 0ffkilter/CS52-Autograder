@@ -29,25 +29,6 @@ def get_flag(assign_num: int, p: Text, config: Dict):
 
     return flag
 
-
-def parse_test_results(test_results: Text) -> Dict[Text, List[int]]:
-    """Returns a dict containing some test results
-
-    results[problem_number][test_number] = result
-    results[problem_number] = [r0, r1, r2, ...etc] (None if no result)
-    """
-
-    results = test_results.split("|")
-    results_dict = {}
-    for r in results:
-        sections = r.split("/")
-        problem = sections[0] + (sections[1] if sections[1] is not " " else "")
-        if not problem in results_dict:
-            results_dict[problem] = [None] * 10
-        results_dict[problem][int(sections[2])] = int(sections[3])
-    return results_dict
-
-
 def parse_problems(config: Dict) -> List[Tuple[Text, Text, Dict]]:
     """
     Returns a list of triples of problems

@@ -272,8 +272,6 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
         file_list = []
         #possible matches
         for result in possibleFiles:
-
-
             if "2016" in result or "2017" in result:
                 if not 'latest' in result and not 'ontime' in result:
                     #strip the time

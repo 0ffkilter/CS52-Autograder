@@ -1,18 +1,24 @@
 import http.client
 import subprocess
 from os import path
-from typing import Optional, Text, List
+from typing import Optional, Text
 
 
-DEFAULT_SERVER_LOCATION = path.abspath("C:/Users/Matt/Dev/CS52-Autograder/serve-sml")
+DEFAULT_SERVER_LOCATION = path.abspath("C:/Users/Matt/Dev"
+                                       "/CS52-Autograder/serve-sml")
 
 DEFAULT_PORT = 8181
-DEFAULT_FILE_ORDER = [path.join(DEFAULT_SERVER_LOCATION, f'{p}.sml').replace("\\", "/")
-                 for p in ["buffer", "util", "http", "server", "assert", "grading_lib", "main"]]
+DEFAULT_FILE_ORDER = [path.join(DEFAULT_SERVER_LOCATION,
+                                f'{p}.sml').replace("\\", "/")
+                                for p in ["buffer", "util", "http",
+                                          "server", "assert",
+                                          "grading_lib", "main"]]
+
 
 class ServerHandler:
 
-    def __init__(self, port: Optional[int] = None, server_location: Optional[str] = None):
+    def __init__(self, port: Optional[int] = None,
+                 server_location: Optional[str] = None):
         """Make the Server object
 
         Args:
@@ -20,8 +26,9 @@ class ServerHandler:
         files:  the files (and order) that they should be run in
         """
         self.server_location = server_location or DEFAULT_SERVER_LOCATION
-        self.sml_string = " ".join([f'use \"{f}\";' for f in DEFAULT_FILE_ORDER])
-        self.port = port or DFEAULT_PORT
+        self.sml_string = " ".join([f'use \"{f}\";'
+                                    for f in DEFAULT_FILE_ORDER])
+        self.port = port or DEFAULT_PORT
         self.sml_string = f"val default_port = {self.port}; {self.sml_string}"
         self.process = None
         self.has_started = False
@@ -43,7 +50,8 @@ class ServerHandler:
         if self.has_started:
             return self.process
 
-        self.process = subprocess.Popen(f"echo {self.sml_string} | sml", shell=True)
+        self.process = subprocess.Popen(f"echo {self.sml_string} | sml",
+                                        shell=True)
         self.has_started = True
         return self.process
 
@@ -67,19 +75,23 @@ class ServerHandler:
         resp = self.get_response("file/" + filename)
         return self.check_response(resp)
 
-    def get_results(self, problem_number: Text, sub_problem_number: Text = None):
+    def get_results(self, problem_number: Text,
+                    sub_problem_number: Text = None):
         """Get the results of tests back from the server
-        
+
         Args:
-        problem_number:  The number of the problem.  Convert to string beforehand ("1" not 1)
-        sub_problem_number:  The letter (or number) of the subproblem.  Should also be string
+        problem_number:  The number of the problem.
+            Convert to string beforehand ("1" not 1)
+        sub_problem_number:  The letter (or number)
+            of the subproblem.  Should also be string
         """
 
         resp = None
         if sub_problem_number is None:
             resp = self.get_response(f"results/{problem_number}")
         else:
-            resp = self.get_response(f"results/{problem_number}/{sub_problem_number}")
+            resp = self.get_response(f"results/{problem_number}"
+                                     "/{sub_problem_number}")
         if self.check_response(resp):
             return resp.read()
         return None
@@ -88,7 +100,7 @@ class ServerHandler:
         """Kills the server.  Returns true if server is dead, false otherwise
         """
         try:
-            #Should Error if server is properly dead
+            # Should Error if server is properly dead
             self.get_response("kill")
             return False
         except ConnectionResetError:
@@ -106,5 +118,4 @@ class ServerHandler:
         except ConnectionRefusedError:
             self.has_started = False
             return False
-        print("hello?")
         return self.check_status()
