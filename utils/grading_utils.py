@@ -7,8 +7,9 @@ January, 2017
 """
 import os
 import re
+from typing import Text, Dict, List, Tuple
 
-def get_flag(assign_num, p, config):
+def get_flag(assign_num: int, p: Text, config: Dict):
     if "Flag" in config:
         return "0%i_%s" %(assign_num, config["Flag"])
     flag = ""
@@ -28,15 +29,13 @@ def get_flag(assign_num, p, config):
 
     return flag
 
-
-def parse_problems(config):
+def parse_problems(config: Dict) -> List[Tuple[Text, Text, Dict]]:
     """
     Returns a list of triples of problems
     [(problem_name, problem_type, data)]
 
 
     """
-
     return_list = []
     num_problems = config["Assignment"]["NumProblems"]
 
@@ -58,19 +57,20 @@ def parse_problems(config):
                 cur_prob = "%i%s" %(cur_num, sub_problem)
                 if "Mode" in config[cur_prob]:
                     cur_mode = config[cur_prob]["Mode"]
-                return_list.append(
+                return_list.append((
                             "%i%s" %(cur_num, sub_problem),
                             cur_mode,
-                            config["%i%s" %(cur_num, sub_problem)])
+                            config["%i%s" %(cur_num, sub_problem)]))
         else:
-            return_list.append(
+            return_list.append((
                         cur_str,
                         cur_mode,
                         config[cur_str]
-                        )
+                        ))
+    return return_list
 
 
-
+#Deprecated
 def get_requirements(requirements, assign_num):
     """Gets the requirements string from the path"
 
@@ -102,7 +102,7 @@ def get_requirements(requirements, assign_num):
     return return_list
 
 
-def split_string(string, flag):
+def split_string(string: Text, flag: Text, select_all: bool = True) -> Text:
     """ Splits a string based on the flags
 
     string:     string to split
@@ -117,7 +117,8 @@ def split_string(string, flag):
     regex = re.compile('[$][+-][\w.\-\*]*')
 
     selectedFlags = set([flag])
-    selectedFlags.add('')
+    if select_all:
+        selectedFlags.add('')
 
     currentFlags = set()
 
@@ -138,10 +139,13 @@ def split_string(string, flag):
                         currentFlags.discard(flagName)
             echo = 0 < len(currentFlags)
         elif echo:
-            result = result + "\n" + line
+            result = f"{result}\n{line}"
     return result
 
-def parse_a52(name, output, expected_answer):
+def parse_a52(name: Text, output: Text, expected_answer: Text) -> (Text, bool):
+    """
+    
+    """
     pat = re.compile("CS52 says > (\d*)")
 
     res = pat.search(output)
@@ -158,7 +162,7 @@ def parse_a52(name, output, expected_answer):
     return ("%s:\tFAIL\n\tExpected: %s\n\tActual: %s" %(name, expected_answer, fail_ans), False)
 
 
-def split_file(read_file, flag):
+def split_file(read_file: Text, flag: Text) -> Text:
     with open(read_file, 'r') as f:
         contents = f.read()
 
@@ -166,7 +170,7 @@ def split_file(read_file, flag):
 
 #print(split_file(os.path.join("asgt01-ready", "Abele", "Abele-asgt01.sml"), "01_01"))
 
-def format_check(f_name):
+def format_check(f_name: str) -> (int, int, int, int):
     """
     Return number of lines that are incorrectly formatted
 
@@ -193,3 +197,38 @@ def format_check(f_name):
                 contains_tab += 1
 
     return (too_long, contains_tab, comments, linecount)
+
+
+string = """
+(*** $+* ***)
+(*
+ * Common material: types and values for Mastermind
+ *
+ * See the assignment for discussion and details
+ *
+ *)
+datatype Peg = Red | Orange | Yellow | Green | Blue | Violet;
+
+val allColors = [Red, Orange, Yellow, Green, Blue, Violet];
+
+fun cons first rest = first::rest;
+fun consAll lst elt = map (cons elt) lst;
+
+fun possibilities elts k =
+        if k < 0
+           then []
+        else if k = 0
+           then [[]]
+           else List.concat (map (consAll(possibilities elts (k-1))) elts);
+
+val allCodes = possibilities allColors;
+
+(* End of common material *)
+
+
+(*** Problem 03_01   $- $+03_01 ***)
+
+foobar
+"""
+
+print(split_string(string, "03_01"))
