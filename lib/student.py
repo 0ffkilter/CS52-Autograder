@@ -7,11 +7,14 @@ from collections import OrderedDict
 
 class Student:
 
-    def __init__(self, name: Text, assignment: Assignment, student_dir):
+    def __init__(self, name: Text, alias: Text,
+                 section: int, assignment: Assignment, student_dir: Text):
         self.current_problem = "1"
         self.assignment = assignment
         self.dir = student_dir
         self.name = name
+        self.alias = alias
+        self.section = section
         self.port = hash(name) % (10 ** 8)
         self.server = ServerHandler(self.port)
         self.results = OrderedDict()
