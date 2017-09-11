@@ -1,21 +1,22 @@
 
 import configparser
-from problem import Problem
+from lib.problem import Problem
 from typing import Text, Optional
 from os import path
 from collections import OrderedDict
 
+DEFAULT_GRADING_PATH = path.join("grading_scripts", "assignments")
 
 class Assignment:
 
     def __init__(self, assignment_number: int,
-                 grading_path: Text = "grading_scripts"):
+                 grading_path: Text = DEFAULT_GRADING_PATH):
 
         config_file = path.join(grading_path,
                                 f"asgt0{assignment_number}",
                                 "config.ini")
 
-        self.config = configparser.ConfibugParser()
+        self.config = configparser.ConfigParser()
         self.config.read(config_file)
         self.grading_path = grading_path
         self.assignment_number = assignment_number
@@ -25,6 +26,9 @@ class Assignment:
         self.num_problems = int(self.config["Assignment"]["NumProblems"])
         self.problem_points = self.total_points - self.style_points
         self.problems = OrderedDict()
+        self.files = self.config["Assignment"]["Files"].split(",")
+        if len(self.files) is 1:
+            self.file = self.files[0]
         if "Mode" in self.config["Assignment"]:
             self.mode = self.config["Assignment"]["Mode"]
         else:
@@ -71,15 +75,17 @@ class Assignment:
                         cur_mode = self.config[cur_prob]["Mode"]
                     self.problems[cur_prob] = Problem(
                         self.assignment_number,
-                        cur_num,
-                        int(self.config[cur_num]["Points"]),
-                        int(self.config[cur_num]["Tests"]),
+                        cur_prob,
+                        self.config[cur_prob]["Name"],
+                        float(self.config[cur_prob]["Points"]),
+                        int(self.config[cur_prob]["Tests"]),
                         cur_mode)
 
             else:
                 self.problems[cur_num] = Problem(
                     self.assignment_number,
                     cur_num,
-                    int(self.config[cur_num]["Points"]),
+                    self.config[cur_num]["Name"],
+                    float(self.config[cur_num]["Points"]),
                     int(self.config[cur_num]["Tests"]),
                     cur_mode)

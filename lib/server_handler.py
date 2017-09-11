@@ -1,7 +1,9 @@
 import http.client
 import subprocess
+import socket
 from os import path
 from typing import Optional, Text
+from utils import cmd_utils
 
 
 DEFAULT_SERVER_LOCATION = path.abspath("C:/Users/Matt/Dev"
@@ -39,7 +41,9 @@ class ServerHandler:
         The server only supports GET, so that's why it's hardcoded
         """
 
-        conn = http.client.HTTPConnection(f"localhost:{self.port}")
+        get_string = get_string.replace("\\", "/")
+        print(f"Calling: {get_string}")
+        conn = http.client.HTTPConnection(f"localhost:{self.port}", timeout=3)
         conn.request("GET", get_string)
         return conn.getresponse()
 
@@ -71,7 +75,6 @@ class ServerHandler:
         Args:
         filename:  Complete path to run
         """
-
         resp = self.get_response("file/" + filename)
         return self.check_response(resp)
 
@@ -91,7 +94,7 @@ class ServerHandler:
             resp = self.get_response(f"results/{problem_number}")
         else:
             resp = self.get_response(f"results/{problem_number}"
-                                     "/{sub_problem_number}")
+                                     f"/{sub_problem_number}")
         if self.check_response(resp):
             return resp.read()
         return None
@@ -100,14 +103,17 @@ class ServerHandler:
         """Kills the server.  Returns true if server is dead, false otherwise
         """
         try:
+            cmd_utils.kill(self.process.pid)
             # Should Error if server is properly dead
             self.get_response("kill")
             return False
-        except ConnectionResetError:
+        except ConnectionRefusedError:
             self.has_started = False
             return True
         except http.client.ResponseNotReady:
             return False
+        except socket.timeout:
+            return True
         return False
 
     def start(self) -> bool:
