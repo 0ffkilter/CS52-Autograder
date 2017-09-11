@@ -14,7 +14,7 @@ from utils import cmd_utils
 import re
 import configparser
 import zipfile
-from grading_scripts.student_list import STUDENT_LIST
+from grading_scripts.data.student_list import STUDENT_LIST
 
 
 REZIP_CODE = """
@@ -243,7 +243,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
     stdt_list:      list of students
     """
 
-
+    print(f"source: {source_dir}")
     if not os.path.exists(source_dir):
         if re.match("(asgt0)([1-9]{1})(-submissions)", source_dir) is None:
             raise FileNotFoundError("Source Destination doesn't exist")
@@ -261,17 +261,20 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
 
     cur_student = 1
     total_students = len(stdt_list)
+    print(total_students)
+    for (student, alias, email, section) in stdt_list:
 
-    for (student, email, section) in stdt_list:
         cmd_utils.progress(cur_student, total_students, email)
         cur_student = cur_student + 1
         #print("%s : %s" %(student, email))
-        possibleFiles = glob.glob(os.path.join(source_dir, "*" + anyCase(email) + "*"))
+        possibleFiles = glob.glob(os.path.join(source_dir, "*" + anyCase(alias) + "*"))
         if len(possibleFiles) == 0:
             return_list.append((student, [], files))
         file_list = []
         #possible matches
         for result in possibleFiles:
+
+
             if "2016" in result or "2017" in result:
                 if not 'latest' in result and not 'ontime' in result:
                     #strip the time
