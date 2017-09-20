@@ -7,6 +7,7 @@ from collections import OrderedDict
 
 DEFAULT_GRADING_PATH = path.join("grading_scripts", "assignments")
 
+
 class Assignment:
 
     def __init__(self, assignment_number: int,

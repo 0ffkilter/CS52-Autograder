@@ -20,7 +20,9 @@ DEFAULT_FILE_ORDER = [path.join(DEFAULT_SERVER_LOCATION,
 class ServerHandler:
 
     def __init__(self, port: Optional[int] = None,
-                 server_location: Optional[str] = None):
+                 name: Optional[Text] = "",
+                 server_location: Optional[str] = None,
+                 log_file: Optional[Text] = None):
         """Make the Server object
 
         Args:
@@ -34,6 +36,8 @@ class ServerHandler:
         self.sml_string = f"val default_port = {self.port}; {self.sml_string}"
         self.process = None
         self.has_started = False
+        self.log_file = log_file
+        self.name = name
 
     def get_response(self, get_string: Text) -> http.client.HTTPResponse:
         """Get the response from a GET request
@@ -42,7 +46,7 @@ class ServerHandler:
         """
 
         get_string = get_string.replace("\\", "/")
-        print(f"Calling: {get_string}")
+        print(f"Server {self.name}: {get_string}")
         conn = http.client.HTTPConnection(f"localhost:{self.port}", timeout=3)
         conn.request("GET", get_string)
         return conn.getresponse()
@@ -53,11 +57,22 @@ class ServerHandler:
 
         if self.has_started:
             return self.process
+        if self.log_file:
+            with open(self.log_file, 'a') as f:
+                self.process = subprocess.Popen(
+                    f"echo {self.sml_string} | sml",
+                    shell=True,
+                    stdout=f)
+        else:
+            self.process = subprocess.Popen(f"echo {self.sml_string} | sml",
+                                            shell=True)
 
-        self.process = subprocess.Popen(f"echo {self.sml_string} | sml",
-                                        shell=True)
         self.has_started = True
         return self.process
+
+    def export_state(self, export_path: Text) -> Text:
+        self.get_response(f"export/{export_path}")
+        return export_path
 
     def check_response(self, resp: http.client.HTTPResponse) -> bool:
         """Returns True if the response is 200 status and has 'Ok'"""

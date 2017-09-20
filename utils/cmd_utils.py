@@ -13,11 +13,15 @@ from subprocess import PIPE, TimeoutExpired, Popen
 from platform import platform
 from time import monotonic as timer
 
+
 def kill(proc_pid):
-    process = psutil.Process(proc_pid)
-    for proc in process.children(recursive=True):
-        proc.kill()
-    process.kill()
+    try:
+        process = psutil.Process(proc_pid)
+        for proc in process.children(recursive=True):
+            proc.kill()
+        process.kill()
+    except psutil.NoSuchProcess:
+        return
 
 def progress(count, total, suffix=''):
     """
