@@ -15,6 +15,9 @@ import re
 import configparser
 import zipfile
 from grading_scripts.data.student_list import STUDENT_LIST
+from lib.student import Student
+from typing import List
+from numpy import array_split
 
 
 REZIP_CODE = """
@@ -89,13 +92,11 @@ def zip_students(assign_num, start_name, end_name, zip_name=None, progress=None)
     return cur_progress
 
 
-def get_partitions(num_partitions):
+def get_partitions(num_partitions: int, student_list: List[Student]) -> List[List[Student]]:
     num_students = len(STUDENT_LIST)
 
     num_students_partition = int(num_students/num_partitions)
     num_extra = num_students % num_partitions
-
-
 
     current_idx = 0
     partitions = []

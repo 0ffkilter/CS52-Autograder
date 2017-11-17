@@ -6,13 +6,13 @@ from time import sleep
 
 mailer = GoogleMailer()
 
-assignment_number = 2
+assignment_number = 3
 
 
 def discover_file(student: Text, assignment: int, filename: Text) -> Text:
 
     path = join("assignments", f"asgt0{assignment}",
-                f"asgt0{assignment}-dist", student)
+                f"asgt0{assignment}-finished", student)
     if exists(join(path, filename)):
         return join(path, filename)
     return None

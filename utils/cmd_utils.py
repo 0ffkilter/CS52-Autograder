@@ -122,7 +122,7 @@ def run_a52(script_file, input_file, path_to_52=None, assign_num=4,timeout=5):
 
     cmd = "java -jar %s -p %s -u %s" %(path_to_52, script_file, input_file)
     start = timer()
-    with Popen(cmd, shell=True, stdout=PIPE, preexec_fn=os.setsid) as process:
+    with Popen(cmd, shell=True, stdout=PIPE) as process:
         try:
             output = process.communicate(timeout=timeout)[0]
             output = output.decode('ascii')
