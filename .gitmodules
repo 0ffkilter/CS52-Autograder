@@ -1,3 +1,6 @@
 [submodule "CS52-GradingScripts"]
 	path = CS52-GradingScripts
 	url = https://github.com/0ffkilter/CS52-GradingScripts
+[submodule "serve-sml"]
+	path = serve-sml
+	url = https://github.com/0ffkilter/serve-sml.git
