@@ -6,7 +6,7 @@ from time import sleep
 
 mailer = GoogleMailer()
 
-assignment_number = 3
+assignment_number = 5
 
 
 def discover_file(student: Text, assignment: int, filename: Text) -> Text:
@@ -27,7 +27,9 @@ This is your grade from assignment {assignment_number}.
 
 If you have any questions or comments, post on piazza and we'll try our best to help you out!
 
-Hopefully this'll be a better message last time, but I got kinda busy.
+Sorry for the delay - I'm just a senior who doesn't have his shit together.  
+
+Also, don't reply to this email - it'll probably take until next semester for me to read it.  Piazza works better.  
 
 Best,
 

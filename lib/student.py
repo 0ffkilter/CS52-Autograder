@@ -1,11 +1,12 @@
 import socket
+import time
 from lib.assignment import Assignment
 from typing import Text, Optional
 from lib.server_handler import ServerHandler
 from os import path, makedirs, remove, getcwd
 from collections import OrderedDict
 from utils.grading_utils import split_string
-from utils.cmd_utils import run_a52
+from utils.cmd_utils import run_a52, run_sml_a52
 from shutil import copy
 from http.client import HTTPException
 from re import match, DOTALL
@@ -72,7 +73,7 @@ Assignment {self.assignment.assignment_number}
 
 """
 
-    def generate_subfiles(self, filename: Text):
+    def sml_initialize(self, filename: Text):
         """ Generates sml grading subfiles in student_dir/grading
 
         Keyword Arguments:
@@ -80,18 +81,27 @@ Assignment {self.assignment.assignment_number}
         """
         # fname = f"{self.name}-{filename}"
 
+
+        # Copy assert library file to grading path
+        # (puts assert.sml in student_name/grading/)
         copy(DEFAULT_PATH_TO_ASSERT, self.grading_path)
 
+        # Check for the student file, return if they didn't submit
         file_path = path.join(self.dir, f"{self.name}-{filename}")
         if not path.exists(file_path):
             return
 
+        # Refresh server log
         if path.exists(path.join(self.dir, "server_log.txt")):
             remove(path.join(self.dir, "server_log.txt"))
 
+        # Let's open their file
         with open(file_path, 'r') as f:
             file_contents = f.read()
 
+        # Include the header starter file
+        # Puts the starter code (data structures, etc) if 
+        # necessary at the top of each grading file
         default_write_string = ""
         if self.assignment.starter_file is not None:
             copy(self.assignment.starter_file, self.grading_path)
@@ -99,14 +109,24 @@ Assignment {self.assignment.assignment_number}
             default_write_string = f"(* use \"{fname}\"; *)\n"
             print(default_write_string)
 
+        # For each of the assignment's problems
         for k, v in self.assignment.problems.items():
             print(f"{self.name} generate: {k}")
-            if v.mode is "sml":
+
+            # Do this for sml or for sml_a52 (since
+            # it just runs a52 after sml)
+            if v.mode is "sml" or v.mode is "sml_a52":
                 print(f"{self.name} generate sml: {k}")
+
+                # Make the test file in student/grading
                 problem_path = path.join(
                     self.grading_path,
                     f"asgt0{self.assignment.assignment_number}_{k}.sml"
                 )
+
+                # Put the header, then assert
+                # then their file contents
+                # then a compilation test
                 write_string = default_write_string
                 write_string = write_string + "(* use \"assert.sml\"; *)"
                 write_string = write_string + split_string(
@@ -114,10 +134,17 @@ Assignment {self.assignment.assignment_number}
                 write_string = write_string + \
                     f"\naddTest \"{k}\" \"0\" \"Compilation Test\" \"0\";"
 
-                with open(v.test_path, 'r') as f:
-                    content = f.read()
-                    write_string = f"{write_string}\n\n{content}"
+                # Open our test path (sml mode only)
+                # attach test
+                try:
+                    with open(v.test_path, 'r') as f:
+                        content = f.read()
+                        write_string = f"{write_string}\n\n{content}"
+                except AttributeError:
+                    # It's an sml_a52 problem which doesn't need a test
+                    print("no test found")
 
+                # Write to file
                 with open(problem_path, 'w+') as f:
                     f.write(write_string)
                     self.problems[k] = problem_path
@@ -125,6 +152,10 @@ Assignment {self.assignment.assignment_number}
                 print(f"{self.name} generate: {k}, {str_len} {problem_path}")
 
     def a52_initialize(self):
+
+        # Copy both the library files to the student dir (for
+        # graders) and to the current working directory
+        # to run the jar file easily
         for f in DEFAULT_A52_LIBRARY_FILES:
             copy(path.join(DEFAULT_PATH_TO_A52_LIBS, f), self.dir)
             copy(path.join(DEFAULT_PATH_TO_A52_LIBS, f), getcwd())
@@ -136,10 +167,17 @@ Assignment {self.assignment.assignment_number}
         copy(DEFAULT_PATH_TO_JAR, self.dir)
 
     def a52_direct_initialize(self, problem):
+        # Copy the premade file to the student dir
         copy(path.join(self.assignment.resource_path, problem.runfile),
              self.grading_path)
 
     def initialize(self):
+        """
+        Checks each of the problem modes and calls the appropriate
+        generation functions
+
+        """
+
         self.grading_path = path.join(self.dir, "grading")
         if not path.exists(self.grading_path):
             makedirs(self.grading_path)
@@ -147,7 +185,8 @@ Assignment {self.assignment.assignment_number}
         # Blanket initialization
         if any([v.mode is "sml" for k, v in self.assignment.problems.items()]):
             for f in self.assignment.files:
-                self.generate_subfiles(f)
+                if ".sml" in f:
+                    self.sml_initialize(f)
         # Blanket initialization
         if any([v.mode is "a52" for k, v in self.assignment.problems.items()]):
             self.a52_initialize()
@@ -167,6 +206,11 @@ Assignment {self.assignment.assignment_number}
                 f.write(self.header)
 
     def start(self):
+        """
+        wrapper for server handler
+        Will start sml server if not already up
+        """
+
         if not self.is_started:
             self.server = ServerHandler(self.port + self.server_count,
                                         name=self.name,
@@ -177,11 +221,18 @@ Assignment {self.assignment.assignment_number}
             self.is_started = True
 
     def end(self):
+        """
+        kills self web server
+        """
         if self.is_started:
             self.server.kill()
             self.is_started = False
 
     def result_to_string(self, result: int) -> Text:
+        """
+        Returns the appropriate string to match test results
+        """
+
         return {0: "Pass",
                 1: "Fail: Incorrect Answer",
                 2: "Fail: Unexpected Error - Test did not run",
@@ -189,6 +240,9 @@ Assignment {self.assignment.assignment_number}
                 }.get(result)
 
     def compilation_string(self, result: int) -> Text:
+        """
+        Same as above, but only for compilation tests
+        """
         return {0: "Sucessful",
                 3: "Error Compiling"}.get(result)
 
@@ -203,9 +257,14 @@ Assignment {self.assignment.assignment_number}
         return max(0, max_score - ((num_tests - num_passed) * 0.5))
 
     def export_results(self):
+        """
+        Exports all results in self.results to student/asgt0N_grades.txt
+        """
+
         print(self.results)
         end_string = self.header
 
+        #Assignment setup
         total_points = self.assignment.total_points
         style_points = self.assignment.style_points
         assignment_points = total_points + style_points
@@ -214,13 +273,15 @@ Assignment {self.assignment.assignment_number}
         tests_passed = 0
         problem_points = 0
         for (p, v) in self.results.items():
+
+            # Get data on each problem
             current_problem = self.assignment.problems[p]
 
             number_points = current_problem.points
             number_tests = current_problem.tests
             total_tests = total_tests + number_tests
             name = current_problem.name
-            end_string = f"{end_string}\n\n{p}: {name}\n======"
+            end_string = f"{end_string}\n\n{p}: {name}\n======="
 
             if current_problem.mode is "sml":
                 r = self.compilation_string(v[0][0])
@@ -369,11 +430,57 @@ Questions? Comments? Missed something? Post on Piazza (preferably private)
                     2,
                     f"Expected {expected_answer}, got {actual_answer}")]
 
+    def run_sml_a52(self, problem_number: Text):
+        print(f"{self.name} sml_a52: {problem_number}")
+        start_key = f"+{problem_number}+"
+        end_key = f"-{problem_number}-"
+        self.start()
+        try:
+            self.server.run_file(self.problems[problem_number])
+            time.sleep(0.5)
+        except KeyError:
+            return
+        except HTTPException:
+            self.started = False
+
+
+        with open(self.server.log_file, 'r') as f:
+            content = f.read()
+            results = content[content.find(start_key) + len(start_key):content.find(end_key)]
+
+        if results is not None:
+            with open(path.join(self.grading_path, f"p{problem_number}_output.txt"), "w+") as f:
+                f.write(results)
+
+            output = run_sml_a52(path.join(self.grading_path, f"p{problem_number}_output.txt"), DEFAULT_PATH_TO_JAR)
+            current_problem = self.assignment.problems[problem_number]
+            expected_answer = int(current_problem.answer)
+
+            res = match("CS52 says > (-?\d+).*", output, DOTALL)
+            if res is None:
+                if output is not "":
+                    self.results[problem_number] = [(1, output.rstrip())]
+                else:
+                    self.results[problem_number] = [(2, "Encountered other error - file not found?")]
+            else:
+                actual_answer = int(res.groups(0)[0])
+                if actual_answer == expected_answer:
+                    self.results[problem_number] = [(0, "Correct")]
+                else:
+                    self.results[problem_number] = [(
+                        2,
+                        f"Expected {expected_answer}, got {actual_answer}")]
+        else:
+            self.results[problem_number] = [(2, "Code not found")]
+
     def run_dfa(self, problem_number: Text):
         pass
 
     def run_tur(self, problem_number: Text):
         pass
+
+    def run_visual(self, problem_number: Text):
+        self.results[problem_number] = []
 
     def run_problem(self, problem_number: Text):
         print(f"{self.name} run: {problem_number}")
@@ -381,12 +488,13 @@ Questions? Comments? Missed something? Post on Piazza (preferably private)
         If nothing is specified, runs the next problem
                 after the last one previously run
         """
-        print("run problem")
         problem_mode = self.assignment.problems[problem_number].mode
         {"sml": self.run_sml,
          "a52": self.run_a52,
          "a52_direct": self.run_a52_direct,
+         "sml_a52": self.run_sml_a52,
          "dfa": self.run_dfa,
+         "visual": self.run_visual,
          "tur": self.run_tur}.get(problem_mode)(problem_number)
 
     def run_all(self):

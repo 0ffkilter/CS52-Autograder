@@ -11,7 +11,6 @@ from lib.grader_code import REZIP_CODE
 
 
 def grade_student(s: Student):
-    print("grading")
     try:
         print(s.name)
         print(s.name)
@@ -68,39 +67,35 @@ def package_dist(assignment_path: Text, num_partitions: int,
 
 if __name__ == '__main__':
 
-    assignment_number = 6
+    assignment_number = 8
     asgt = Assignment(assignment_number)
 
-    for (k, v) in asgt.problems.items():
-        print(v.flag)
 
-    assignment_path = path.join(getcwd(), "assignments", "asgt06")
+    assignment_path = path.join(getcwd(), "assignments", "asgt08")
 
-    print([v.mode for k, v in asgt.problems.items()])
-
-    gather = False
-    generate = False
-    grade = False
+    gather = True
+    generate = True
+    grade = True
     package = True
 
     if gather:
         move_files(asgt.files,
-                   path.join(assignment_path, "asgt06-submissions"),
-                   path.join(assignment_path, "asgt06-ready"),
+                   path.join(assignment_path, "asgt08-submissions"),
+                   path.join(assignment_path, "asgt08-ready"),
                    False,
                    STUDENT_LIST)
 
     students = []
 
-    default_student_dir = path.join(assignment_path, "asgt06-ready")
+    default_student_dir = path.join(assignment_path, "asgt08-ready")
 
     has_started = False
 
     student_name = None
-
     port_count = 3000
     for (name, alias, email, section) in STUDENT_LIST:
-        if student_name is not None and name is not student_name:
+        print(name)
+        if student_name is not None and name != student_name:
             continue
         students.append(Student(
             name,

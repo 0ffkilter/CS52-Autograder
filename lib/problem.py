@@ -14,6 +14,7 @@ class Problem:
         self.points = float(config["Points"])
         self.name = config["Name"]
         self.default_path = DEFAULT_TEST_PATH
+        self.tests = 1
 
 
 class SMLProblem(Problem):
@@ -21,7 +22,11 @@ class SMLProblem(Problem):
     def __init__(self, assign_number: int, problem_number: Text, config: dict):
         Problem.__init__(self, assign_number, problem_number, config)
         self.mode = "sml"
-        self.get_flag()
+        if "Flag" in config:
+            self.flag = f'0{self.assignment_number}_{config["Flag"]}'
+        else:
+            self.get_flag()
+        print(self.problem_number, self.flag)
         self.find_file()
         self.tests = int(config["Tests"])
 
@@ -96,13 +101,50 @@ class A52DirectProblem(Problem):
 class SML_A52Problem(Problem):
     def __init__(self, assign_number: int, problem_number: Text, config: dict):
         Problem.__init__(self, assign_number, problem_number, config)
-        if self.assign_number < 10:
-            self.flag = f'0{assign_number}_{config["Flag"]}'
-        else:
-            self.flag = f'{assign_number}_{config["Flag"]}'
         self.answer = config["Answer"]
         self.mode = "sml_a52"
+        if "Flag" in config:
+            self.flag = f'0{self.assignment_number}_{config["Flag"]}'
+        else:
+            self.get_flag()
+        new_path = path.join(
+            self.default_path,
+            f"asgt0{self.assignment_number}",
+            f"asgt0{self.assignment_number}_{self.problem_number}.sml"
+        )
+        self.test_path = new_path
 
+    def get_flag(self):
+        """
+        TODO: Refactor
+        """
+        flag = ""
+        if len(self.problem_number) > 1:
+            if self.problem_number[-1].isalpha():
+                if int(self.problem_number[:-1]) < 10:
+                    flag = "0%i_0%s" % (self.assignment_number,
+                                        self.problem_number)
+                else:
+                    flag = "0%i_%s" % (self.assignment_number,
+                                       self.problem_number)
+            else:
+                flag = "0%i_%s" % (self.assignment_number,
+                                   self.problem_number)
+        else:
+            if int(self.problem_number) < 10:
+                flag = "0%i_0%s" % (self.assignment_number,
+                                    self.problem_number)
+            else:
+                flag = "0%i_%s" % (self.assignment_number,
+                                   self.problem_number)
+
+        self.flag = flag
+
+
+class VisualProblem(Problem):
+    def __init__(self, assign_number: int, problem_number: Text, config: dict):
+        Problem.__init__(self, assign_number, problem_number, config)
+        self.mode = "visual"
 
 def problem_builder(assign_number: int, problem_number: Text,
                     assign_mode: Optional[Text], config: dict) -> Problem:
@@ -124,5 +166,7 @@ def problem_builder(assign_number: int, problem_number: Text,
         return A52DirectProblem(assign_number, problem_number, config)
     elif prob_mode == "sml_a52":
         return SML_A52Problem(assign_number, problem_number, config)
+    elif prob_mode == "visual":
+        return VisualProblem(assign_number, problem_number, config)
     else:
         print("fuck")
