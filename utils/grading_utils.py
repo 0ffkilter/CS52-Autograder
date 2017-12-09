@@ -198,37 +198,3 @@ def format_check(f_name: str) -> (int, int, int, int):
 
     return (too_long, contains_tab, comments, linecount)
 
-
-string = """
-(*** $+* ***)
-(*
- * Common material: types and values for Mastermind
- *
- * See the assignment for discussion and details
- *
- *)
-datatype Peg = Red | Orange | Yellow | Green | Blue | Violet;
-
-val allColors = [Red, Orange, Yellow, Green, Blue, Violet];
-
-fun cons first rest = first::rest;
-fun consAll lst elt = map (cons elt) lst;
-
-fun possibilities elts k =
-        if k < 0
-           then []
-        else if k = 0
-           then [[]]
-           else List.concat (map (consAll(possibilities elts (k-1))) elts);
-
-val allCodes = possibilities allColors;
-
-(* End of common material *)
-
-
-(*** Problem 03_01   $- $+03_01 ***)
-
-foobar
-"""
-
-print(split_string(string, "03_01"))

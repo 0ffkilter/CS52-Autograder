@@ -245,6 +245,7 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
     """
 
     print(f"source: {source_dir}")
+    print(files)
     if not os.path.exists(source_dir):
         if re.match("(asgt0)([1-9]{1})(-submissions)", source_dir) is None:
             raise FileNotFoundError("Source Destination doesn't exist")
@@ -257,12 +258,8 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
         created = False
 
     return_list = []
-
-    print("Gathering Files")
-
     cur_student = 1
     total_students = len(stdt_list)
-    print(total_students)
     for (student, alias, email, section) in stdt_list:
 
         cmd_utils.progress(cur_student, total_students, email)
@@ -345,7 +342,8 @@ def move_files(files, source_dir, target_dir, overwrite=False, stdt_list=STUDENT
                         shutil.copy(file_src_name, file_tgt_name)
 
                 else:
-                    os.remove(file_tgt_name)
+                    if os.path.exists(file_tgt_name):
+                        os.remove(file_tgt_name)
                     shutil.copy(file_src_name, file_tgt_name)
 
 
