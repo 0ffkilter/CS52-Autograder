@@ -1,21 +1,10 @@
 import http.client
 import subprocess
 import socket
-from os import path
+from os import path, remove
 from typing import Optional, Text
 from utils import cmd_utils
-
-
-DEFAULT_SERVER_LOCATION = path.abspath("C:/Users/Matt/Dev"
-                                       "/CS52-Autograder/serve-sml")
-
-DEFAULT_PORT = 8181
-DEFAULT_FILE_ORDER = [path.join(DEFAULT_SERVER_LOCATION,
-                                f'{p}.sml').replace("\\", "/")
-                                for p in ["buffer", "util", "http",
-                                          "server", "assert",
-                                          "grading_lib", "main"]]
-
+from lib.constants import *
 
 class ServerHandler:
 
@@ -37,6 +26,8 @@ class ServerHandler:
         self.process = None
         self.has_started = False
         self.log_file = log_file
+        if path.exists(self.log_file):
+            remove(log_file)
         self.name = name
 
     def get_response(self, get_string: Text) -> http.client.HTTPResponse:
@@ -47,7 +38,7 @@ class ServerHandler:
 
         get_string = get_string.replace("\\", "/")
         print(f"Server {self.name}: {get_string}")
-        conn = http.client.HTTPConnection(f"localhost:{self.port}", timeout=3)
+        conn = http.client.HTTPConnection(f"localhost:{self.port}", timeout=30)
         conn.request("GET", get_string)
         return conn.getresponse()
 
@@ -76,6 +67,7 @@ class ServerHandler:
 
     def check_response(self, resp: http.client.HTTPResponse) -> bool:
         """Returns True if the response is 200 status and has 'Ok'"""
+        print (resp.status, resp.reason)
         return resp.status == 200
 
     def check_status(self) -> bool:

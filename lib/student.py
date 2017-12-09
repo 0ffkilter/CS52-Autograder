@@ -10,12 +10,7 @@ from utils.cmd_utils import run_a52, run_sml_a52
 from shutil import copy
 from http.client import HTTPException
 from re import match, DOTALL
-from lib.grader_code import RUN_A52
-
-DEFAULT_PATH_TO_ASSERT = path.join("serve-sml", "assert.sml")
-DEFAULT_PATH_TO_A52_LIBS = path.join("grading_scripts", "data")
-DEFAULT_A52_LIBRARY_FILES = ["divilib.a52", "divrlib.a52", "mullib.a52"]
-DEFAULT_PATH_TO_JAR = path.join("grading_scripts", "data", "cs52-machine.jar")
+from lib.constants import *
 
 
 class Student:
@@ -100,7 +95,7 @@ Assignment {self.assignment.assignment_number}
             file_contents = f.read()
 
         # Include the header starter file
-        # Puts the starter code (data structures, etc) if 
+        # Puts the starter code (data structures, etc) if
         # necessary at the top of each grading file
         default_write_string = ""
         if self.assignment.starter_file is not None:
@@ -127,10 +122,15 @@ Assignment {self.assignment.assignment_number}
                 # Put the header, then assert
                 # then their file contents
                 # then a compilation test
+                code = ""
+                if self.assignment.starter_file is not None:
+                    code = split_string(file_contents, v.flag, False)
+                else:
+                    code = split_string(file_contents, v.flag)
+
                 write_string = default_write_string
                 write_string = write_string + "(* use \"assert.sml\"; *)"
-                write_string = write_string + split_string(
-                    file_contents, v.flag)
+                write_string = write_string + code
                 write_string = write_string + \
                     f"\naddTest \"{k}\" \"0\" \"Compilation Test\" \"0\";"
 
@@ -262,6 +262,7 @@ Assignment {self.assignment.assignment_number}
         """
 
         print(self.results)
+        
         end_string = self.header
 
         #Assignment setup

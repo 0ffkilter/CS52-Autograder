@@ -1,7 +1,13 @@
 from typing import Text, Optional
 from os import path
+from lib.constants import *
 
-DEFAULT_TEST_PATH = path.join("grading_scripts", "assignments")
+
+def get_name(assignment_number: int) -> Text:
+    if assignment_number < 10:
+        return f"asgt0{assignment_number}"
+    else:
+        return f"asgt{assignment_number}"
 
 
 class Problem:
@@ -13,7 +19,7 @@ class Problem:
         self.problem_number = problem_number
         self.points = float(config["Points"])
         self.name = config["Name"]
-        self.default_path = DEFAULT_TEST_PATH
+        self.default_path = DEFAULT_GRADING_PATH
         self.tests = 1
 
 
@@ -26,7 +32,6 @@ class SMLProblem(Problem):
             self.flag = f'0{self.assignment_number}_{config["Flag"]}'
         else:
             self.get_flag()
-        print(self.problem_number, self.flag)
         self.find_file()
         self.tests = int(config["Tests"])
 
@@ -60,10 +65,11 @@ class SMLProblem(Problem):
         """
         Finds the path to the test file that's associated with it
         """
+        name = get_name(self.assignment_number)
         new_path = path.join(
             self.default_path,
-            f"asgt0{self.assignment_number}",
-            f"asgt0{self.assignment_number}_{self.problem_number}.{self.mode}"
+            name,
+            f"{name}_{self.problem_number}.{self.mode}"
         )
         self.test_path = new_path
 
@@ -72,12 +78,10 @@ class A52Problem(Problem):
 
     def __init__(self, assign_number: int, problem_number: Text, config: dict):
         Problem.__init__(self, assign_number, problem_number, config)
-        for k, v in config.items():
-            print(k, v)
         self.answer = config["Answer"]
         self.test_path = path.join(
             self.default_path,
-            f"asgt0{self.assignment_number}",
+            get_name(assign_number),
             config["Name"]
         )
         self.filename = config["File"]
@@ -109,8 +113,8 @@ class SML_A52Problem(Problem):
             self.get_flag()
         new_path = path.join(
             self.default_path,
-            f"asgt0{self.assignment_number}",
-            f"asgt0{self.assignment_number}_{self.problem_number}.sml"
+            get_name(assign_number),
+            f"{get_name(assign_number)}_{self.problem_number}.sml"
         )
         self.test_path = new_path
 
@@ -156,8 +160,6 @@ def problem_builder(assign_number: int, problem_number: Text,
     if "Mode" in config:
         prob_mode = config["Mode"]
 
-    print(problem_number, f"|{prob_mode}|")
-
     if prob_mode == "sml":
         return SMLProblem(assign_number, problem_number, config)
     elif prob_mode == "a52":
@@ -169,4 +171,4 @@ def problem_builder(assign_number: int, problem_number: Text,
     elif prob_mode == "visual":
         return VisualProblem(assign_number, problem_number, config)
     else:
-        print("fuck")
+        print("unknown value")

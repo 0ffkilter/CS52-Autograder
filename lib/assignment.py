@@ -1,11 +1,15 @@
-
 import configparser
 from lib.problem import Problem, SMLProblem, A52Problem, problem_builder
 from typing import Text, Optional
 from os import path
 from collections import OrderedDict
+from lib.constants import DEFAULT_GRADING_PATH
 
-DEFAULT_GRADING_PATH = path.join("grading_scripts", "assignments")
+def get_name(assignment_number: int) -> Text:
+    if assignment_number < 10:
+        return f"asgt0{assignment_number}"
+    else:
+        return f"asgt{assignment_number}"
 
 
 class Assignment:
@@ -13,8 +17,9 @@ class Assignment:
     def __init__(self, assignment_number: int,
                  grading_path: Text = DEFAULT_GRADING_PATH):
 
+        self.name = get_name(assignment_number)
         self.assignment_path = path.join(grading_path,
-                                         f"asgt0{assignment_number}")
+                                         self.name)
         self.resource_path = path.join(self.assignment_path, "resources")
         config_file = path.join(self.assignment_path, "config.ini")
 
@@ -33,14 +38,13 @@ class Assignment:
             self.file = self.files[0]
         if "Mode" in self.config["Assignment"]:
             self.mode = self.config["Assignment"]["Mode"]
-            print("Mode: " + self.mode)
         else:
             self.mode = "sml"
         if self.mode is "sml":
             self.solution_path = path.join(grading_path,
-                                           f"asgt0{assignment_number}",
+                                           self.name,
                                            "resources",
-                                           f"asgt0{assignment_number} \
+                                           f"{self.name} \
                                            _solution.sml")
         self.starter_file = None
         if "StarterCode" in self.config["Assignment"]:
@@ -49,8 +53,6 @@ class Assignment:
                 self.config["Assignment"]["StarterCode"])
         else:
             self.solution_path = None
-        print(self.mode)
-
         self.build_problems()
 
     def next_problem(self, problem_number: Optional[Text]):
@@ -75,11 +77,9 @@ class Assignment:
         """
         for i in range(1, self.num_problems + 1):
             cur_num = str(i)
-            print(cur_num)
             if "Problems" in self.config[cur_num]:
                 for sub_problem in self.config[cur_num]["Problems"].split(","):
                     cur_prob = f"{cur_num}{sub_problem}"
-                    print(cur_prob)
                     self.problems[cur_prob] = problem_builder(
                         self.assignment_number,
                         cur_prob,
