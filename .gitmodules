@@ -5,3 +5,6 @@
 	path = serve-sml
 	url = https://github.com/0ffkilter/serve-sml
 	branch = master
+[submodule "jflap-lib"]
+	path = jflap-lib
+	url = https://github.com/0ffkilter/jflap-lib.git
