@@ -67,6 +67,8 @@ def package_dist(assignment_path: Text, num_partitions: int,
 
 if __name__ == '__main__':
 
+
+
     assignment_number = 8
     asgt = Assignment(assignment_number)
 
