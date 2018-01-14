@@ -11,6 +11,7 @@ from shutil import copy
 from http.client import HTTPException
 from re import match, DOTALL
 from lib.constants import *
+from jflap_turing.jflap_lib import *
 
 
 class Student:
@@ -236,7 +237,8 @@ Assignment {self.assignment.assignment_number}
         return {0: "Pass",
                 1: "Fail: Incorrect Answer",
                 2: "Fail: Unexpected Error - Test did not run",
-                3: "Fail: Unexpected Error - Test failed to complete"
+                3: "Fail: Unexpected Error - Test failed to complete",
+                4: "File not found"
                 }.get(result)
 
     def compilation_string(self, result: int) -> Text:
@@ -244,7 +246,8 @@ Assignment {self.assignment.assignment_number}
         Same as above, but only for compilation tests
         """
         return {0: "Sucessful",
-                3: "Error Compiling"}.get(result)
+                3: "Error Compiling"
+                }.get(result)
 
     def get_score(self, max_score: float, num_tests: int, num_passed: int):
         # 0 iff no tests passed
@@ -260,9 +263,6 @@ Assignment {self.assignment.assignment_number}
         """
         Exports all results in self.results to student/asgt0N_grades.txt
         """
-
-        print(self.results)
-        
         end_string = self.header
 
         #Assignment setup
@@ -284,7 +284,7 @@ Assignment {self.assignment.assignment_number}
             name = current_problem.name
             end_string = f"{end_string}\n\n{p}: {name}\n======="
 
-            if current_problem.mode is "sml":
+            if current_problem.mode is "sml" or current_problem.mode is "jflap":
                 r = self.compilation_string(v[0][0])
                 end_string = f"{end_string}\n\tCompilation: {r}"
                 v = v[1:]
@@ -474,11 +474,45 @@ Questions? Comments? Missed something? Post on Piazza (preferably private)
         else:
             self.results[problem_number] = [(2, "Code not found")]
 
-    def run_dfa(self, problem_number: Text):
-        pass
+    def run_jflap(self, problem_number: Text):
+        problem = self.assignment.problems[problem_number]
 
-    def run_tur(self, problem_number: Text):
-        pass
+        file = path.join(self.dir, f"{self.name}-{self.assignment.name}-{problem_number}.jff")
+
+        with open(problem.test_path, "r") as f:
+            contents = f.read()
+        tests = []
+        for line in contents.split("\n"):
+            if line is "":
+                continue
+            sections = line.split(" ")
+            if sections[1] == "true":
+                result = True
+            else:
+                result = False
+            tests.append((sections[0], result))
+
+        if path.exists(file):
+            self.results[problem_number] = [(0, "File found")] + ([(2, "Test not run")] * problem.tests)
+        else:
+            self.results[problem_number] = [(4, "File not found")] + ([(3, "File not found")] * problem.tests)
+            return
+        current_test_num = 1
+        for test_str, expected in tests:
+            try:
+                res = make_and_run(file, test_str, expected)
+                if res:
+                    self.results[problem_number][current_test_num] = (0, "Correct")
+                else:
+                    self.results[problem_number][current_test_num] = (1, "Incorrect Answer")
+            except (RuntimeError):
+                self.results[problem_number][current_test_num] = (2, "Exceeded runtime")
+            except AttributeError:
+                self.results[problem_number][current_test_num] = (1, "Improper JFLAP File")
+            current_test_num = current_test_num + 1
+
+
+
 
     def run_visual(self, problem_number: Text):
         self.results[problem_number] = []
@@ -494,9 +528,9 @@ Questions? Comments? Missed something? Post on Piazza (preferably private)
          "a52": self.run_a52,
          "a52_direct": self.run_a52_direct,
          "sml_a52": self.run_sml_a52,
-         "dfa": self.run_dfa,
+         "jflap": self.run_jflap,
          "visual": self.run_visual,
-         "tur": self.run_tur}.get(problem_mode)(problem_number)
+         }.get(problem_mode)(problem_number)
 
     def run_all(self):
         """

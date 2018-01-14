@@ -145,6 +145,26 @@ class SML_A52Problem(Problem):
         self.flag = flag
 
 
+class JFlapProblem(Problem):
+    def __init__(self, assign_number: int, problem_number: Text, config: dict):
+        Problem.__init__(self, assign_number, problem_number, config)
+        self.tests = int(config["Tests"])
+        self.mode = "jflap"
+        self.find_file()
+
+    def find_file(self):
+        """
+        Finds the path to the test file that's associated with it
+        """
+        name = get_name(self.assignment_number)
+        new_path = path.join(
+            self.default_path,
+            name,
+            f"{name}_{self.problem_number}.txt"
+        )
+        self.test_path = new_path
+
+
 class VisualProblem(Problem):
     def __init__(self, assign_number: int, problem_number: Text, config: dict):
         Problem.__init__(self, assign_number, problem_number, config)
@@ -170,5 +190,7 @@ def problem_builder(assign_number: int, problem_number: Text,
         return SML_A52Problem(assign_number, problem_number, config)
     elif prob_mode == "visual":
         return VisualProblem(assign_number, problem_number, config)
+    elif prob_mode == "jflap":
+        return JFlapProblem(assign_number, problem_number, config)
     else:
         print("unknown value")

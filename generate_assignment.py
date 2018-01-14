@@ -11,8 +11,8 @@ import shutil
 import sys
 from grading_scripts.student_list import STUDENT_LIST
 
-#January 10, 2017 at 5pm
-#Arbitrarily chosen
+# January 10, 2017 at 5pm
+# Arbitrarily chosen
 file_string = "2017-01-10T17+00+00+000Z-%s"
 
 assign_num = int(sys.argv[1])

@@ -6,6 +6,7 @@ from typing import Optional, Text
 from utils import cmd_utils
 from lib.constants import *
 
+
 class ServerHandler:
 
     def __init__(self, port: Optional[int] = None,
