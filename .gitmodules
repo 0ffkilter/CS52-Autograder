@@ -3,8 +3,5 @@
 	url = https://github.com/0ffkilter/CS52-GradingScripts
 [submodule "serve-sml"]
 	path = serve-sml
-	url = https://github.com/0ffkilter/serve-sml
-	branch = master
-[submodule "jflap-lib"]
-	path = jflap-lib
-	url = https://github.com/0ffkilter/jflap-lib.git
+	url = https://github.com/0ffkilter/serve-sml.git
+
